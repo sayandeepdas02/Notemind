@@ -1,0 +1,131 @@
+# =============================================================================
+#  Notemind — Root .gitignore
+#  Covers: Go backend, Next.js frontend, Terraform, Docker, K8s, IDE/OS files
+# =============================================================================
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+# Never commit real credentials. Use .env.example as the template.
+.env
+.env.*
+!.env.example          # Allow the example template to be tracked
+*.secret
+*.secrets
+*.key
+!*.pub                 # Public keys are fine
+secrets/
+
+# ── Go (Backend) ──────────────────────────────────────────────────────────────
+# Compiled binaries
+backend/api
+backend/worker
+backend/bin/
+**/bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Go test & profiling artefacts
+*.test
+*.out
+coverage.out
+coverage.html
+*.prof
+*.pprof
+cpu.out
+mem.out
+
+# Vendor directory (we use go modules, not vendor mode)
+vendor/
+
+# ── Node.js / Next.js (Frontend) ──────────────────────────────────────────────
+**/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.vercel/
+frontend/tsconfig.tsbuildinfo
+frontend/next-env.d.ts
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Terraform / IaC ───────────────────────────────────────────────────────────
+# State files can contain plaintext secrets — store in S3 backend only
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Local overrides and variable files (may contain passwords)
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Terraform working directories
+infra/terraform/.terraform/
+infra/terraform/.terraform.lock.hcl
+
+# Terraform plan files (can contain sensitive data)
+*.tfplan
+*.tfplan.json
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+# Local Docker override files
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ── Kubernetes ────────────────────────────────────────────────────────────────
+# kubeconfig — contains cluster credentials
+kubeconfig
+*.kubeconfig
+.kube/
+
+# Rendered secret manifests (use sealed-secrets or external-secrets in CI)
+*-secret.yaml
+*-secrets.yaml
+infra/k8s/secrets/
+
+# ── IDE & Editor ──────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+*.code-workspace
+
+# ── OS Generated ──────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Temporary & Build Artefacts ───────────────────────────────────────────────
+tmp/
+temp/
+.tmp/
+dist/
+*.log
+
+# ── vexa-main (external project / submodule candidate) ────────────────────────
+# This directory contains its own git history. Track it as a submodule
+# or exclude it entirely. Currently excluded to avoid nested repo issues.
+vexa-main/
+
+# ── Design Assets (large binary files) ───────────────────────────────────────
+# Uncomment if design files are too large for Git
+# design/**/*.sketch
+# design/**/*.fig
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+.gemini/
+*.bak
+*.orig

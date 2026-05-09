@@ -1,0 +1,13 @@
+DROP INDEX IF EXISTS idx_meeting_shares_meeting_id;
+DROP INDEX IF EXISTS idx_meeting_shares_token;
+DROP INDEX IF EXISTS idx_key_points_meeting_id;
+DROP INDEX IF EXISTS idx_decisions_meeting_id;
+DROP INDEX IF EXISTS idx_action_items_status;
+DROP INDEX IF EXISTS idx_action_items_meeting_id;
+DROP INDEX IF EXISTS idx_summaries_meeting_id;
+DROP INDEX IF EXISTS idx_segments_created_at;
+DROP INDEX IF EXISTS idx_segments_meeting_id;
+DROP INDEX IF EXISTS idx_transcripts_meeting_id;
+DROP INDEX IF EXISTS idx_meetings_status;
+DROP INDEX IF EXISTS idx_meetings_created_at;
+DROP INDEX IF EXISTS idx_meetings_user_id;

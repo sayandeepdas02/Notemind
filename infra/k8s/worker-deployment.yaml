@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notemind-worker
+  namespace: production
+  labels:
+    app: notemind-worker
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notemind-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: notemind-worker
+    spec:
+      containers:
+        - name: notemind-worker
+          image: <ECR_REGISTRY>/notemind-worker:latest
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          envFrom:
+            - secretRef:
+                name: notemind-secrets
+          # Workers have no HTTP probes — use a process readiness check
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "test $(pgrep worker) != ''"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+---
+# KEDA ScaledObject: scale workers based on Redis queue length
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notemind-worker-scaler
+  namespace: production
+spec:
+  scaleTargetRef:
+    name: notemind-worker
+  minReplicaCount: 1
+  maxReplicaCount: 30
+  cooldownPeriod: 60
+  triggers:
+    - type: redis
+      metadata:
+        address: redis-master.production.svc.cluster.local:6379
+        listName: "asynq:{default}:queues:ai"
+        listLength: "10" # 1 worker per 10 queued AI jobs
+    - type: redis
+      metadata:
+        address: redis-master.production.svc.cluster.local:6379
+        listName: "asynq:{default}:queues:transcription"
+        listLength: "5"
