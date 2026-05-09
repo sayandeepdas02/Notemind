@@ -130,10 +130,10 @@ func NewOAuthService(cfg OAuthConfig, tokenStore TokenStore) *OAuthService {
 // AuthorizationURL builds the Zoom OAuth authorization URL for the user to visit.
 func (s *OAuthService) AuthorizationURL(state string) string {
 	params := url.Values{
-		"response_type": {"code"},
-		"client_id":     {s.cfg.ClientID},
-		"redirect_uri":  {s.cfg.RedirectURI},
-		"state":         {state},
+		"response_type": []string{"code"},
+		"client_id":     []string{s.cfg.ClientID},
+		"redirect_uri":  []string{s.cfg.RedirectURI},
+		"state":         []string{state},
 	}
 	return zoomAuthURL + "?" + params.Encode()
 }
@@ -150,9 +150,9 @@ type zoomTokenResponse struct {
 // ExchangeCode exchanges an authorization code for an OAuth token pair and persists it.
 func (s *OAuthService) ExchangeCode(ctx context.Context, userID, code string) (*OAuthToken, error) {
 	body := url.Values{
-		"grant_type":   {"authorization_code"},
-		"code":         {code},
-		"redirect_uri": {s.cfg.RedirectURI},
+		"grant_type":   []string{"authorization_code"},
+		"code":         []string{code},
+		"redirect_uri": []string{s.cfg.RedirectURI},
 	}
 
 	tok, err := s.doTokenRequest(ctx, body)

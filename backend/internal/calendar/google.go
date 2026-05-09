@@ -49,13 +49,13 @@ func (g *GoogleCalendarClient) AuthorizationURL(state string) string {
 		"https://www.googleapis.com/auth/calendar.events.readonly",
 	}
 	params := url.Values{
-		"client_id":     {g.cfg.ClientID},
-		"redirect_uri":  {g.cfg.RedirectURI},
-		"response_type": {"code"},
-		"scope":         {strings.Join(scopes, " ")},
-		"access_type":   {"offline"},
-		"prompt":        {"consent"},
-		"state":         {state},
+		"client_id":     []string{g.cfg.ClientID},
+		"redirect_uri":  []string{g.cfg.RedirectURI},
+		"response_type": []string{"code"},
+		"scope":         []string{strings.Join(scopes, " ")},
+		"access_type":   []string{"offline"},
+		"prompt":        []string{"consent"},
+		"state":         []string{state},
 	}
 	return googleAuthURL + "?" + params.Encode()
 }
@@ -72,11 +72,11 @@ type googleTokenResponse struct {
 // then persists them in the oauth_tokens table.
 func (g *GoogleCalendarClient) ExchangeCode(ctx context.Context, userID, code string) error {
 	body := url.Values{
-		"code":          {code},
-		"client_id":     {g.cfg.ClientID},
-		"client_secret": {g.cfg.ClientSecret},
-		"redirect_uri":  {g.cfg.RedirectURI},
-		"grant_type":    {"authorization_code"},
+		"code":          []string{code},
+		"client_id":     []string{g.cfg.ClientID},
+		"client_secret": []string{g.cfg.ClientSecret},
+		"redirect_uri":  []string{g.cfg.RedirectURI},
+		"grant_type":    []string{"authorization_code"},
 	}
 
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, googleTokenURL,
@@ -134,10 +134,10 @@ func (g *GoogleCalendarClient) getValidToken(ctx context.Context, userID string)
 		return "", fmt.Errorf("google calendar token expired and no refresh_token stored")
 	}
 	body := url.Values{
-		"client_id":     {g.cfg.ClientID},
-		"client_secret": {g.cfg.ClientSecret},
-		"refresh_token": {refreshToken},
-		"grant_type":    {"refresh_token"},
+		"client_id":     []string{g.cfg.ClientID},
+		"client_secret": []string{g.cfg.ClientSecret},
+		"refresh_token": []string{refreshToken},
+		"grant_type":    []string{"refresh_token"},
 	}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, googleTokenURL,
 		strings.NewReader(body.Encode()))
