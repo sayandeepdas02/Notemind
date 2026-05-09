@@ -35,7 +35,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & push API image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile.api
@@ -45,7 +45,7 @@ jobs:
             ${{ env.ECR_REGISTRY }}/notemind-api:latest
 
       - name: Build & push Worker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/Dockerfile.worker
