@@ -1,439 +1,308 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Loader2, StopCircle, Share2, ArrowLeft, Video, CheckCircle2, FileText, AlignLeft, Target, Users, Clock } from "lucide-react";
+import { use, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Share2, StopCircle, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-type Meeting = {
-  id: string;
-  status: string;
-  meeting_url: string;
-};
+import { api, APIError } from '@/lib/api';
+import type { Meeting, MeetingIntelligence, ShareMeetingResponse } from '@/types/api';
+import { useMeetingStream, LIVE_STATUSES, ENDED_STATUSES } from '@/features/meetings/hooks/useMeetingStream';
+import { TranscriptPanel } from '@/features/meetings/components/TranscriptPanel';
+import { InsightsPanel } from '@/features/meetings/components/InsightsPanel';
+import { AIChatPanel } from '@/features/meetings/components/AIChatPanel';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Panel } from '@/components/ui/panel';
 
-type Segment = {
-  id: string;
-  speaker: string;
-  text: string;
-  absolute_start_time: string;
-  sequence_id?: number;
-};
+// ── Share Modal ───────────────────────────────────────────────
 
-type ActionItem = { task: string; owner: string; deadline?: string };
-type TimelineEvent = { time: string; event: string };
-
-type MeetingIntelligence = {
-  summary: string;
-  key_points: string[];
-  decisions: string[];
-  action_items: ActionItem[];
-  participants: string[];
-  timeline: TimelineEvent[];
-};
-
-const LIVE = new Set(["JOINING", "WAITING_FOR_ADMISSION", "ADMITTED", "RECORDING", "RECONNECTING"]);
-const ENDED = new Set(["ENDED", "FAILED", "DENIED", "DISCONNECTED"]);
-
-function formatTime(iso: string) {
-  try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); } 
-  catch { return ""; }
+interface ShareModalProps {
+  link: string;
+  onClose: () => void;
 }
 
-function mergeSegments(existing: Segment[], incoming: Segment[]): Segment[] {
-  const map = new Map(existing.map(s => [s.id, s]));
-  for (const s of incoming) map.set(s.id, s);
-  return [...map.values()].sort(
-    (a, b) => new Date(a.absolute_start_time).getTime() - new Date(b.absolute_start_time).getTime()
+function ShareModal({ link, onClose }: ShareModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-md"
+      >
+        <Panel padding="lg">
+          <h3 className="text-base font-semibold text-foreground mb-1">Share Insights</h3>
+          <p className="text-sm text-muted-foreground mb-5">
+            Anyone with this link can view the meeting summary, key points, and action items.
+            The raw transcript remains private.
+          </p>
+          <div className="flex items-center gap-2 mb-5">
+            <input
+              type="text"
+              readOnly
+              value={link}
+              className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none select-all"
+              onClick={e => (e.target as HTMLInputElement).select()}
+            />
+            <button
+              onClick={copy}
+              className="px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-hover transition-colors shrink-0"
+            >
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-surface-3 text-foreground rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+          >
+            Close
+          </button>
+        </Panel>
+      </motion.div>
+    </motion.div>
   );
 }
 
-export default function MeetingDetailSplitView() {
-  const { id } = useParams<{ id: string }>();
+// ── Right panel tabs ──────────────────────────────────────────
+
+type RightTab = 'chat' | 'participants';
+
+// ── Page ──────────────────────────────────────────────────────
+
+export default function MeetingDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const router = useRouter();
-  
+
   const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [status, setStatus] = useState("loading");
-  const [error, setError] = useState("");
-  
-  const [segments, setSegments] = useState<Segment[]>([]);
-  const [intel, setIntel] = useState<MeetingIntelligence | null>(null);
-  
-  const [activeTab, setActiveTab] = useState<"summary" | "actions" | "decisions">("summary");
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareLink, setShareLink] = useState("");
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const sseRef = useRef<EventSource | null>(null);
-  const lastSeqRef = useRef<number>(0);
+  const [intelligence, setIntelligence] = useState<MeetingIntelligence | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<RightTab>('chat');
+  const [stopping, setStopping] = useState(false);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [segments.length]);
-
-  const fetchMeetingAndIntel = useCallback(async () => {
+  // Fetch intelligence when meeting ends
+  const fetchIntelligence = useCallback(async () => {
     try {
-      const token = localStorage.getItem("notemind_token");
-      const headers = { "Authorization": `Bearer ${token}` };
-      const [mRes, iRes] = await Promise.all([
-        fetch(`http://localhost:8080/meetings/${id}`, { headers }),
-        fetch(`http://localhost:8080/meetings/${id}/summary`, { headers }).catch(() => null)
-      ]);
-      
-      if (!mRes.ok) throw new Error("Meeting not found");
-      const m = await mRes.json();
-      setMeeting(m);
-      setStatus(m.status);
-
-      if (iRes && iRes.ok) {
-        setIntel(await iRes.json());
-      }
+      const data = await api.get<MeetingIntelligence>(`/meetings/${id}/summary`);
+      if (data) setIntelligence(data);
     } catch {
-      setError("Could not load meeting details.");
+      // Summary may not be ready yet — silent fail
     }
   }, [id]);
 
+  // Initial load
   useEffect(() => {
-    fetchMeetingAndIntel();
-
-    const token = localStorage.getItem("notemind_token");
-    const sse = new EventSource(`http://localhost:8080/meetings/${id}/stream?token=${token}`);
-    sseRef.current = sse;
-
-    sse.onmessage = (e) => {
+    const load = async () => {
       try {
-        // SSE standard gives us e.lastEventId
-        if (e.lastEventId) {
-          lastSeqRef.current = parseInt(e.lastEventId, 10) || lastSeqRef.current;
+        const m = await api.get<Meeting>(`/meetings/${id}`);
+        setMeeting(m);
+        // Pre-fetch intelligence if already completed
+        if (ENDED_STATUSES.has(m.status)) {
+          await fetchIntelligence();
         }
-
-        const evt = JSON.parse(e.data);
-        if (evt.type === "segments") {
-          setSegments(prev => mergeSegments(prev, evt.data));
-        }
-        if (evt.type === "status") {
-          const newStatus = evt.data.status;
-          setStatus(newStatus);
-          if (ENDED.has(newStatus)) {
-            sse.close();
-            // Fetch the compiled AI summary once ended
-            setTimeout(fetchMeetingAndIntel, 2000); 
-          }
-        }
-      } catch { /* ignore */ }
+      } catch (err) {
+        setPageError(
+          err instanceof APIError ? err.message : 'Meeting not found.'
+        );
+      }
     };
-    sse.onerror = () => sse.close();
-    return () => sse.close();
-  }, [id, fetchMeetingAndIntel]);
+    load();
+  }, [id, fetchIntelligence]);
+
+  // SSE stream
+  const { segments, status, connectionState } = useMeetingStream({
+    meetingId: id,
+    initialStatus: meeting?.status ?? 'pending',
+    onEnded: () => {
+      // Delay fetch to allow AI pipeline to complete
+      setTimeout(fetchIntelligence, 2500);
+    },
+  });
+
+  const isLive = LIVE_STATUSES.has(status);
 
   const stopBot = async () => {
-    const token = localStorage.getItem("notemind_token");
-    await fetch(`http://localhost:8080/meetings/${id}/bot`, { 
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    setStatus("ended");
-    sseRef.current?.close();
-  };
-
-  const generateShareLink = async () => {
-    const token = localStorage.getItem("notemind_token");
+    setStopping(true);
     try {
-      const res = await fetch(`http://localhost:8080/meetings/${id}/share`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.share_token) {
-        setShareLink(`${window.location.origin}/share/${data.share_token}`);
-        setShowShareModal(true);
-      }
-    } catch (e) {
-      alert("Failed to generate share link");
+      await api.delete(`/meetings/${id}/bot`);
+    } catch (err) {
+      console.error('Stop bot failed:', err instanceof APIError ? err.message : err);
+    } finally {
+      setStopping(false);
     }
   };
 
-  if (error) {
+  const generateShareLink = async () => {
+    try {
+      const data = await api.post<ShareMeetingResponse>(`/meetings/${id}/share`, {});
+      if (data?.share_token) {
+        setShareLink(`${window.location.origin}/share/${data.share_token}`);
+      }
+    } catch {
+      // TODO: surface via toast
+    }
+  };
+
+  // ── Error State ───────────────────────────────────────────
+
+  if (pageError) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center">
-        <div className="w-16 h-16 bg-[#2d0a0a] text-[#ef4444] rounded-full flex items-center justify-center mb-4">
-          <StopCircle size={32} />
+      <div className="flex flex-col items-center justify-center h-full text-center p-8 gap-4">
+        <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center">
+          <StopCircle size={24} className="text-red-400" />
         </div>
-        <h2 className="text-xl font-bold text-[#f8f8fa] mb-2">Meeting Not Found</h2>
-        <p className="text-[#8b8b9f] mb-6">{error}</p>
-        <button onClick={() => router.push("/dashboard")} className="px-6 py-2 bg-[#222230] text-[#f8f8fa] rounded-lg font-medium hover:bg-[#3b3b4f] transition-colors">
-          Go back to Dashboard
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Meeting not found</h2>
+          <p className="text-sm text-muted-foreground">{pageError}</p>
+        </div>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="px-5 py-2 bg-surface-3 border border-border text-foreground rounded-lg text-sm font-medium hover:opacity-80 transition-opacity"
+        >
+          Back to Dashboard
         </button>
       </div>
     );
   }
-
-  if (status === "DENIED") {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center">
-        <div className="w-16 h-16 bg-[#2d0a0a] text-[#ef4444] rounded-full flex items-center justify-center mb-4">
-          <StopCircle size={32} />
-        </div>
-        <h2 className="text-xl font-bold text-[#f8f8fa] mb-2">Admission Denied</h2>
-        <p className="text-[#8b8b9f] mb-6">The host denied entry to the NoteMind bot, or a CAPTCHA prevented joining.</p>
-        <button onClick={() => router.push("/dashboard")} className="px-6 py-2 bg-[#222230] text-[#f8f8fa] rounded-lg font-medium hover:bg-[#3b3b4f] transition-colors">
-          Go back to Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  const isLive = LIVE.has(status);
 
   return (
-    <div className="h-full flex flex-col p-4 lg:p-6 bg-[#050508]">
-      
-      {/* Header Bar */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-[#0a0a0f] p-4 lg:px-6 rounded-2xl border border-[#222230]">
-        <div className="flex items-center gap-4">
-          <button onClick={() => router.push("/dashboard")} className="text-[#8b8b9f] hover:text-[#f8f8fa] p-2 bg-[#121218] rounded-lg border border-[#222230] transition-colors">
-            <ArrowLeft size={18} />
+    <div className="flex flex-col h-[calc(100vh-4rem)] p-4 lg:p-5 gap-4">
+      {/* ── Header ──────────────────────────────────────────── */}
+      <Panel padding="none" className="shrink-0">
+        <div className="flex items-center gap-4 px-5 py-3.5">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="p-1.5 text-muted-foreground hover:text-foreground bg-surface-3 border border-border rounded-lg transition-colors"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft size={16} />
           </button>
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-lg font-bold text-[#f8f8fa]">
-                {meeting?.meeting_url ? "Video Meeting" : "Meeting Recording"}
-              </h1>
-              {isLive ? (
-                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[rgba(16,185,129,0.1)] text-[#34d399]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-[pulse-ring_2s_cubic-bezier(0.4,0,0.6,1)_infinite]" /> Live
-                </span>
-              ) : (
-                <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1a1a24] text-[#8b8b9f]">Ended</span>
-              )}
-            </div>
-            <a href={meeting?.meeting_url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#6366f1] hover:underline font-medium">
-              {meeting?.meeting_url}
-            </a>
+
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <h1 className="text-sm font-semibold text-foreground truncate">
+              {meeting?.title ?? meeting?.meeting_url?.replace('https://', '') ?? 'Meeting'}
+            </h1>
+            <StatusBadge status={status} />
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {isLive && (
+              <button
+                onClick={stopBot}
+                disabled={stopping}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-xs font-semibold hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              >
+                <StopCircle size={14} />
+                {stopping ? 'Stopping…' : 'Stop Bot'}
+              </button>
+            )}
+            <button
+              onClick={generateShareLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 border border-border text-foreground rounded-lg text-xs font-medium hover:opacity-80 transition-opacity"
+            >
+              <Share2 size={14} />
+              Share
+            </button>
           </div>
         </div>
+      </Panel>
 
-        <div className="flex items-center gap-3">
-          {isLive && (
-            <button onClick={stopBot} className="flex items-center gap-2 px-4 py-2 bg-[#2d0a0a] text-[#f87171] border border-[#5a1a1a] rounded-lg text-sm font-semibold hover:bg-[#4a0f0f] transition-colors">
-              <StopCircle size={16} /> Stop Bot
-            </button>
-          )}
-          <button onClick={generateShareLink} className="flex items-center gap-2 px-4 py-2 bg-[#121218] text-[#f8f8fa] border border-[#222230] rounded-lg text-sm font-medium hover:bg-[#222230] transition-colors">
-            <Share2 size={16} /> Share Insights
-          </button>
-        </div>
-      </header>
+      {/* ── 3-Panel Body ────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+
+        {/* Left: Transcript */}
+        <Panel padding="none" className="flex-1 lg:w-1/3 flex flex-col overflow-hidden">
+          <TranscriptPanel
+            segments={segments}
+            status={status}
+            connectionState={connectionState}
+            className="flex-1"
+          />
+        </Panel>
+
+        {/* Center: Insights */}
+        <Panel padding="none" className="flex-1 lg:w-1/3 flex flex-col overflow-hidden">
+          <InsightsPanel
+            intelligence={intelligence}
+            isLive={isLive}
+            className="flex-1"
+          />
+        </Panel>
+
+        {/* Right: AI Chat + Participants */}
+        <Panel padding="none" className="flex-1 lg:w-1/3 flex flex-col overflow-hidden">
+          {/* Tab Bar */}
+          <div className="shrink-0 flex gap-1 px-3 py-2.5 border-b border-border bg-background/50">
+            {(['chat', 'participants'] as RightTab[]).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setRightTab(tab)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
+                  rightTab === tab
+                    ? 'bg-surface-3 text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab === 'chat' ? null : <Users size={12} />}
+                {tab === 'chat' ? 'AI Chat' : 'Participants'}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-hidden">
+            {rightTab === 'chat' && (
+              <AIChatPanel meetingId={id} className="h-full" />
+            )}
+            {rightTab === 'participants' && (
+              <div className="p-4 space-y-2 overflow-y-auto h-full">
+                {!intelligence?.participants?.length ? (
+                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-3">
+                    <Users size={28} className="opacity-20" />
+                    <p className="text-sm">Participants will appear after the meeting.</p>
+                  </div>
+                ) : (
+                  intelligence.participants.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-surface-3 border border-border rounded-xl">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-accent to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                        {p.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium text-foreground">{p}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        </Panel>
+      </div>
 
       {/* Share Modal */}
-      {showShareModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-[#121218] border border-[#222230] rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
-            <h3 className="text-xl font-bold text-[#f8f8fa] mb-2">Share Insights</h3>
-            <p className="text-sm text-[#8b8b9f] mb-6">Anyone with this link can view the meeting summary, key points, and action items. The raw transcript will remain private.</p>
-            <div className="flex items-center gap-2 mb-6">
-              <input 
-                type="text" 
-                readOnly 
-                value={shareLink} 
-                className="flex-1 bg-[#0a0a0f] border border-[#222230] text-[#f8f8fa] px-3 py-2 rounded-lg text-sm outline-none"
-              />
-              <button 
-                onClick={() => { navigator.clipboard.writeText(shareLink); alert("Copied to clipboard!"); }}
-                className="px-4 py-2 bg-[#6366f1] text-white rounded-lg text-sm font-medium hover:bg-[#818cf8]"
-              >
-                Copy
-              </button>
-            </div>
-            <button 
-              onClick={() => setShowShareModal(false)}
-              className="w-full px-4 py-2 bg-[#222230] text-[#f8f8fa] rounded-lg text-sm font-medium hover:bg-[#3b3b4f]"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Split View Content */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-        
-        {/* Left Panel: Transcript Stream */}
-        <div className="flex-1 flex flex-col bg-[#0a0a0f] border border-[#222230] rounded-2xl overflow-hidden shadow-sm relative">
-          
-          {status === "RECONNECTING" && (
-            <div className="absolute top-0 left-0 right-0 bg-[#eab308]/10 text-[#eab308] border-b border-[#eab308]/20 px-4 py-2 text-sm flex items-center justify-center gap-2 z-10 animate-pulse">
-              <Loader2 size={16} className="animate-spin" />
-              Connection lost. Reconnecting to the meeting...
-            </div>
-          )}
-
-          <div className="p-4 border-b border-[#222230] bg-[#121218] flex items-center justify-between">
-            <h2 className="font-semibold text-[#f8f8fa] flex items-center gap-2">
-              <AlignLeft size={16} className="text-[#6366f1]" />
-              Live Transcript
-            </h2>
-            <span className="text-xs text-[#8b8b9f] font-mono">{segments.length} segments</span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
-            {status === "JOINING" && (
-              <div className="h-full flex flex-col items-center justify-center text-[#8b8b9f]">
-                <div className="w-10 h-10 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="font-medium">Connecting to meeting...</p>
-              </div>
-            )}
-
-            {status === "WAITING_FOR_ADMISSION" && (
-              <div className="h-full flex flex-col items-center justify-center text-[#8b8b9f]">
-                <div className="w-10 h-10 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="font-medium">Waiting for the host to let NoteMind in...</p>
-              </div>
-            )}
-            
-            {segments.length === 0 && (status === "RECORDING" || status === "ADMITTED") && (
-              <div className="h-full flex flex-col items-center justify-center text-[#8b8b9f]">
-                <Video size={32} className="mb-4 opacity-50" />
-                <p className="font-medium">Listening for speech...</p>
-              </div>
-            )}
-
-            {segments.map((seg, i) => {
-              const showSpeaker = i === 0 || segments[i - 1].speaker !== seg.speaker;
-              return (
-                <div key={seg.id} className={showSpeaker ? "mt-6" : "mt-1"}>
-                  {showSpeaker && (
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#6366f1] to-[#a855f7] flex items-center justify-center text-[10px] font-bold text-white shadow-sm">
-                        {(seg.speaker || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-semibold text-sm text-[#f8f8fa]">{seg.speaker || "Unknown"}</span>
-                      <span className="text-xs text-[#8b8b9f]">{formatTime(seg.absolute_start_time)}</span>
-                    </div>
-                  )}
-                  <p className="text-sm text-[#d4d4d8] leading-relaxed pl-10">
-                    {seg.text}
-                  </p>
-                </div>
-              );
-            })}
-            <div ref={bottomRef} className="h-4" />
-          </div>
-        </div>
-
-        {/* Right Panel: AI Insights */}
-        <div className="w-full lg:w-[400px] xl:w-[480px] flex flex-col bg-[#0a0a0f] border border-[#222230] rounded-2xl overflow-hidden shadow-sm shrink-0">
-          
-          {/* Tabs */}
-          <div className="flex border-b border-[#222230] bg-[#121218] p-2 gap-2 overflow-x-auto no-scrollbar">
-            {[
-              { id: "summary", icon: FileText, label: "Summary" },
-              { id: "actions", icon: CheckCircle2, label: "Action Items" },
-              { id: "decisions", icon: Target, label: "Decisions" }
-            ].map(tab => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all
-                    ${active ? "bg-[#222230] text-[#f8f8fa]" : "text-[#8b8b9f] hover:text-[#f8f8fa] hover:bg-[#1a1a24]"}
-                  `}
-                >
-                  <Icon size={14} className={active ? "text-[#6366f1]" : ""} /> {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            {!intel ? (
-              <div className="h-full flex flex-col items-center justify-center text-center text-[#8b8b9f] p-8">
-                {isLive ? (
-                  <>
-                    <div className="w-12 h-12 rounded-full bg-[#121218] flex items-center justify-center mb-4 border border-[#222230]">
-                      <FileText size={20} className="text-[#6366f1] animate-pulse" />
-                    </div>
-                    <p className="font-medium text-[#f8f8fa] mb-2">Analyzing meeting...</p>
-                    <p className="text-sm">Structured insights will appear here automatically once the meeting ends.</p>
-                  </>
-                ) : (
-                  <p>AI Intelligence not available yet.</p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-8 animate-in fade-in duration-500">
-                {/* Summary Tab */}
-                {activeTab === "summary" && (
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-[#8b8b9f] mb-3">Executive Summary</h3>
-                      <div className="bg-[#121218] border border-[#222230] rounded-xl p-4 text-sm text-[#d4d4d8] leading-relaxed">
-                        {intel.summary || "No summary available."}
-                      </div>
-                    </div>
-
-                    {intel.key_points?.length > 0 && (
-                      <div>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-[#8b8b9f] mb-3">Key Points</h3>
-                        <ul className="space-y-3">
-                          {intel.key_points.map((kp, i) => (
-                            <li key={i} className="flex gap-3 text-sm text-[#d4d4d8]">
-                              <span className="text-[#6366f1] shrink-0 mt-0.5">•</span>
-                              <span>{kp}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Actions Tab */}
-                {activeTab === "actions" && (
-                  <div>
-                    {(!intel.action_items || intel.action_items.length === 0) ? (
-                      <p className="text-sm text-[#8b8b9f] text-center py-10">No action items detected.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {intel.action_items.map((item, i) => (
-                          <div key={i} className="flex gap-3 p-3 rounded-xl border border-[#222230] bg-[#121218] group hover:border-[#3b3b4f] transition-colors">
-                            <div className="w-5 h-5 rounded border-2 border-[#3b3b4f] shrink-0 mt-0.5 group-hover:border-[#6366f1] transition-colors" />
-                            <div>
-                              <p className="text-sm font-medium text-[#f8f8fa]">{item.task}</p>
-                              {item.owner && (
-                                <p className="text-xs text-[#8b8b9f] mt-1.5 flex items-center gap-1.5">
-                                  <Users size={12} /> {item.owner}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Decisions Tab */}
-                {activeTab === "decisions" && (
-                  <div>
-                    {(!intel.decisions || intel.decisions.length === 0) ? (
-                      <p className="text-sm text-[#8b8b9f] text-center py-10">No clear decisions detected.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {intel.decisions.map((dec, i) => (
-                          <div key={i} className="flex items-start gap-3 p-4 rounded-xl border border-[#10b981]/20 bg-[#10b981]/5">
-                            <Target size={16} className="text-[#10b981] shrink-0 mt-0.5" />
-                            <p className="text-sm text-[#f8f8fa]">{dec}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
+      <AnimatePresence>
+        {shareLink && (
+          <ShareModal link={shareLink} onClose={() => setShareLink(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
