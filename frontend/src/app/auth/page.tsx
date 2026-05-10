@@ -1,65 +1,77 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { api, APIError, storeSession } from '@/lib/api';
+import type { AuthResponse } from '@/types/api';
 
 export default function AuthPage() {
   const router = useRouter();
-
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const loginEmail = email || "demo@notemind.ai";
-    const name = loginEmail.split("@")[0];
+    setError(null);
+    setIsLoading(true);
+
+    const loginEmail = email || 'demo@notemind.ai';
+    const name = loginEmail.split('@')[0];
 
     try {
-      const res = await fetch("http://localhost:8080/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: loginEmail,
-          name: name,
-          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`
-        })
+      const data = await api.post<AuthResponse>('/auth/google', {
+        email: loginEmail,
+        name,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      
-      localStorage.setItem("notemind_token", data.token);
-      localStorage.setItem("notemind_user", JSON.stringify(data.user));
-      router.push("/dashboard");
+
+      storeSession(data.token, data.user);
+
+      if (data.workspaces && data.workspaces.length > 0) {
+        localStorage.setItem('notemind_workspace', JSON.stringify(data.workspaces[0]));
+        router.push('/dashboard');
+      } else {
+        router.push('/onboarding/workspace');
+      }
     } catch (err) {
-      console.error("Login failed:", err);
-      alert("Login failed. Check console.");
+      setError(err instanceof APIError ? err.message : 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050508] flex items-center justify-center p-6 relative">
-      <Link href="/" className="absolute top-8 left-8 text-[#8b8b9f] hover:text-[#f8f8fa] flex items-center gap-2 font-medium transition-colors">
-        <ArrowLeft size={18} /> Back to Home
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative">
+      <Link
+        href="/"
+        className="absolute top-8 left-8 text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm font-medium transition-colors"
+      >
+        <ArrowLeft size={16} /> Back to Home
       </Link>
-      
-      <div className="w-full max-w-md bg-[#121218] border border-[#222230] rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-        {/* Decorative Glow */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#6366f1] opacity-[0.15] blur-3xl rounded-full" />
-        
+
+      <div className="w-full max-w-md bg-surface-2 border border-border rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent opacity-[0.12] blur-3xl rounded-full pointer-events-none" />
+
         <div className="flex flex-col items-center mb-8 relative z-10">
-          <div className="w-12 h-12 rounded-xl bg-[#6366f1] text-white flex items-center justify-center text-xl font-bold mb-4 shadow-lg shadow-[#6366f1]/20">
+          <div className="w-11 h-11 rounded-xl bg-accent text-white flex items-center justify-center text-lg font-bold mb-4 shadow-lg shadow-accent/20">
             ◈
           </div>
-          <h1 className="text-2xl font-bold text-[#f8f8fa]">Welcome to Notemind</h1>
-          <p className="text-[#8b8b9f] text-sm mt-2">Sign in to continue to your dashboard.</p>
+          <h1 className="text-2xl font-bold text-foreground">Welcome to Notemind</h1>
+          <p className="text-muted-foreground text-sm mt-2 text-center">
+            Sign in to continue to your dashboard.
+          </p>
         </div>
 
         <div className="space-y-4 relative z-10">
-          <button 
+          {/* Google OAuth Button */}
+          <button
             onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white text-[#050508] hover:bg-gray-100 font-semibold py-3 px-4 rounded-xl transition-colors border border-transparent"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-3 bg-white text-zinc-900 hover:bg-gray-50 font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 shadow-sm"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -70,34 +82,53 @@ export default function AuthPage() {
             Continue with Google
           </button>
 
-          <div className="relative flex items-center py-4">
-            <div className="flex-grow border-t border-[#222230]"></div>
-            <span className="flex-shrink-0 mx-4 text-[#8b8b9f] text-xs uppercase font-medium tracking-wider">or</span>
-            <div className="flex-grow border-t border-[#222230]"></div>
+          <div className="relative flex items-center py-3">
+            <div className="flex-grow border-t border-border" />
+            <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs uppercase font-medium tracking-wider">
+              or
+            </span>
+            <div className="flex-grow border-t border-border" />
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <input 
-                type="email" 
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="name@company.com" 
-                className="w-full bg-[#0a0a0f] border border-[#222230] text-[#f8f8fa] placeholder-[#8b8b9f] px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/20 transition-all"
-                required 
-              />
-            </div>
-            <button 
+          <form onSubmit={handleLogin} className="space-y-3">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm p-3 rounded-lg">
+                {error}
+              </div>
+            )}
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="name@company.com"
+              className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-50"
+              required
+              disabled={isLoading}
+            />
+            <button
               type="submit"
-              className="w-full bg-[#222230] hover:bg-[#3b3b4f] text-[#f8f8fa] font-semibold py-3 px-4 rounded-xl transition-colors"
+              disabled={isLoading}
+              className="w-full bg-surface-3 hover:bg-border text-foreground font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              Continue with Email
+              {isLoading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                'Continue with Email'
+              )}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-xs text-[#8b8b9f] mt-8 relative z-10">
-          By continuing, you agree to our <a href="#" className="underline hover:text-[#f8f8fa]">Terms of Service</a> and <a href="#" className="underline hover:text-[#f8f8fa]">Privacy Policy</a>.
+        <p className="text-center text-xs text-muted-foreground mt-8 relative z-10">
+          By continuing, you agree to our{' '}
+          <a href="#" className="underline underline-offset-2 hover:text-foreground">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="#" className="underline underline-offset-2 hover:text-foreground">
+            Privacy Policy
+          </a>
+          .
         </p>
       </div>
     </div>
