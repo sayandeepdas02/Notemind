@@ -1,199 +1,245 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Play, Video, Calendar, Clock, Loader2, AlertCircle } from "lucide-react";
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Play, Video, Calendar, Clock, Loader2, AlertCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-type Meeting = {
-  id: string;
-  status: string;
-  meeting_url: string;
-  audio_url: string;
-  created_at: string;
-};
+import { api, APIError } from '@/lib/api';
+import type { Meeting, MeetingJoinResponse } from '@/types/api';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { MeetingCardSkeleton } from '@/components/ui/skeleton';
+import { Panel } from '@/components/ui/panel';
 
-const statusColor: Record<string, { bg: string; text: string; dot: string; label: string }> = {
-  joining:    { bg: "rgba(59, 130, 246, 0.1)", text: "#60a5fa", dot: "#3b82f6", label: "Joining" },
-  live:       { bg: "rgba(16, 185, 129, 0.1)", text: "#34d399", dot: "#10b981", label: "Live" },
-  ended:      { bg: "rgba(139, 139, 159, 0.1)", text: "#a1a1aa", dot: "#71717a", label: "Ended" },
-  failed:     { bg: "rgba(239, 68, 68, 0.1)", text: "#f87171", dot: "#ef4444", label: "Failed" },
-  completed:  { bg: "rgba(139, 139, 159, 0.1)", text: "#a1a1aa", dot: "#71717a", label: "Completed" },
-};
+// ── Meeting Card ──────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
-  const colors = statusColor[status] ?? statusColor.ended;
-  const isLive = status === "live" || status === "joining";
-  
+function MeetingCard({ meeting }: { meeting: Meeting }) {
+  const label = meeting.title
+    ?? meeting.meeting_url?.replace('https://', '')
+    ?? 'Uploaded Recording';
+
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: colors.bg, color: colors.text }}>
-      <span 
-        className="w-1.5 h-1.5 rounded-full" 
-        style={{ 
-          background: colors.dot,
-          animation: isLive ? "pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite" : "none"
-        }} 
-      />
-      {colors.label}
-    </span>
+    <Link href={`/dashboard/meetings/${meeting.id}`} className="group block">
+      <Panel
+        variant="default"
+        padding="none"
+        className="p-5 hover:border-accent/40 hover:-translate-y-px transition-all duration-200 hover:shadow-md hover:shadow-accent/5"
+      >
+        <div className="flex items-start justify-between mb-3 gap-2">
+          <StatusBadge status={meeting.status} />
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium bg-surface-3 px-2 py-1 rounded-md border border-border">
+            <Clock size={11} />
+            {new Date(meeting.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+          </div>
+        </div>
+        <h4 className="text-sm font-medium text-foreground mb-1 truncate group-hover:text-accent transition-colors">
+          {label}
+        </h4>
+        <p className="text-xs text-muted-foreground font-mono">
+          {meeting.id.slice(0, 8)}…
+        </p>
+      </Panel>
+    </Link>
   );
 }
 
+// ── Page ──────────────────────────────────────────────────────
+
 export default function DashboardHome() {
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  
-  // Start Meeting State
-  const [url, setUrl] = useState("");
-  const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState("");
   const router = useRouter();
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loadingMeetings, setLoadingMeetings] = useState(true);
+  const [meetingsError, setMeetingsError] = useState<string | null>(null);
+
+  const [url, setUrl] = useState('');
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  const fetchMeetings = useCallback(async () => {
+    setLoadingMeetings(true);
+    setMeetingsError(null);
+    try {
+      const data = await api.get<Meeting[]>('/meetings');
+      setMeetings(data ?? []);
+    } catch (err) {
+      setMeetingsError(
+        err instanceof APIError ? err.message : 'Failed to load meetings.'
+      );
+    } finally {
+      setLoadingMeetings(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("notemind_token");
-    fetch("http://localhost:8080/meetings", {
-      headers: { "Authorization": `Bearer ${token}` }
-    })
-      .then(r => r.ok ? r.json() : Promise.reject("Failed to fetch"))
-      .then(data => { setMeetings(data || []); setLoading(false); })
-      .catch(e => { setError(String(e)); setLoading(false); });
-  }, []);
+    fetchMeetings();
+  }, [fetchMeetings]);
 
   const handleStartMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!url.startsWith("https://meet.google.com/")) {
-      setStartError("Please enter a valid Google Meet URL");
+    if (!url.trim()) return;
+
+    if (!url.startsWith('https://meet.google.com/') && !url.startsWith('https://zoom.us/')) {
+      setStartError('Please enter a valid Google Meet or Zoom URL');
       return;
     }
+
     setStarting(true);
-    setStartError("");
+    setStartError(null);
+
+    // Optimistic: inject a placeholder meeting card immediately
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimistic: Meeting = {
+      id: optimisticId,
+      workspace_id: '',
+      meeting_url: url,
+      status: 'joining',
+      provider: url.includes('zoom') ? 'zoom' : 'google_meet',
+      created_at: new Date().toISOString(),
+    };
+    setMeetings(prev => [optimistic, ...prev]);
+
     try {
-      const token = localStorage.getItem("notemind_token");
-      const res = await fetch("http://localhost:8080/meetings/join", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ meeting_url: url }),
+      const data = await api.post<MeetingJoinResponse>('/meetings/join', {
+        meeting_url: url,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || data.error || "Failed to start bot");
       router.push(`/dashboard/meetings/${data.meeting_id}`);
-    } catch (err: unknown) {
-      setStartError(err instanceof Error ? err.message : "Unknown error");
+    } catch (err) {
+      setStartError(
+        err instanceof APIError ? err.message : 'Failed to start meeting bot.'
+      );
+      // Roll back the optimistic card
+      setMeetings(prev => prev.filter(m => m.id !== optimisticId));
       setStarting(false);
     }
   };
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-10">
-      
-      {/* Start Meeting Card */}
+    <div className="p-5 lg:p-8 max-w-7xl mx-auto space-y-10">
+
+      {/* ── Start Meeting ────────────────────────────────────── */}
       <section>
-        <div className="bg-[#121218] border border-[#222230] rounded-2xl p-6 lg:p-8 shadow-xl relative overflow-hidden">
-          {/* Background decorative blob */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#6366f1] opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-          
+        <Panel padding="lg" className="relative overflow-hidden">
+          {/* Ambient glow */}
+          <div className="absolute top-0 right-0 w-72 h-72 bg-accent opacity-[0.04] rounded-full blur-3xl -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+
           <div className="relative z-10 max-w-2xl">
-            <h2 className="text-2xl font-bold text-[#f8f8fa] mb-2 flex items-center gap-2">
-              <Video className="text-[#6366f1]" size={24} />
-              Start a new meeting
+            <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
+              <Video size={20} className="text-accent" />
+              Start a new recording
             </h2>
-            <p className="text-[#8b8b9f] mb-6 text-sm">
-              Paste your Google Meet link below. Notemind AI will join automatically and start transcribing.
+            <p className="text-sm text-muted-foreground mb-6">
+              Paste a Google Meet or Zoom link. Notemind will join, transcribe, and summarize automatically.
             </p>
 
             <form onSubmit={handleStartMeeting} className="flex flex-col sm:flex-row gap-3">
               <input
                 type="url"
                 value={url}
-                onChange={e => setUrl(e.target.value)}
+                onChange={e => { setUrl(e.target.value); setStartError(null); }}
                 placeholder="https://meet.google.com/abc-defg-hij"
-                className="input-field flex-1 px-4 py-3 rounded-xl text-sm font-medium"
+                className="flex-1 bg-background border border-border text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-50"
                 required
+                disabled={starting}
               />
               <button
                 type="submit"
-                disabled={starting || !url}
-                className={`
-                  px-6 py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all
-                  ${starting || !url 
-                    ? "bg-[#222230] text-[#8b8b9f] cursor-not-allowed" 
-                    : "bg-[#6366f1] hover:bg-[#818cf8] text-white shadow-lg shadow-[#6366f1]/20"}
-                `}
+                disabled={starting || !url.trim()}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
               >
-                {starting ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} fill="currentColor" />}
-                {starting ? "Dispatching..." : "Start Notemind"}
+                {starting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Play size={16} fill="currentColor" />
+                )}
+                {starting ? 'Dispatching…' : 'Start Notemind'}
               </button>
             </form>
-            
+
             {startError && (
-              <p className="mt-3 text-sm text-[#ef4444] flex items-center gap-1.5 font-medium">
+              <p className="mt-3 text-sm text-red-400 flex items-center gap-1.5">
                 <AlertCircle size={14} /> {startError}
               </p>
             )}
           </div>
-        </div>
+        </Panel>
       </section>
 
-      {/* Recent Meetings */}
+      {/* ── Meetings List ─────────────────────────────────────── */}
       <section id="meetings">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-[#f8f8fa]">Recent Meetings</h3>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-foreground">Recent Meetings</h3>
+          {!loadingMeetings && meetings.length > 0 && (
+            <span className="text-xs text-muted-foreground">{meetings.length} total</span>
+          )}
         </div>
 
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-20 text-[#8b8b9f]">
-            <Loader2 className="animate-spin mb-4" size={32} />
-            <p>Loading your meetings...</p>
+        {/* Skeleton loading */}
+        {loadingMeetings && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <MeetingCardSkeleton key={i} />
+            ))}
           </div>
         )}
 
-        {error && (
-          <div className="bg-[#2d0a0a] border border-[#5a1a1a] rounded-xl p-4 text-[#f87171] flex items-center gap-3">
-            <AlertCircle size={20} />
-            <p>Could not load meetings: {error}</p>
-          </div>
-        )}
-
-        {!loading && !error && meetings.length === 0 && (
-          <div className="border border-dashed border-[#222230] rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#121218] flex items-center justify-center mx-auto mb-4">
-              <Calendar className="text-[#8b8b9f]" size={24} />
+        {/* Error */}
+        {meetingsError && (
+          <div className="flex items-center justify-between gap-4 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400">
+            <div className="flex items-center gap-3 text-sm">
+              <AlertCircle size={18} />
+              <span>{meetingsError}</span>
             </div>
-            <h4 className="text-lg font-medium text-[#f8f8fa] mb-2">No meetings yet</h4>
-            <p className="text-[#8b8b9f] text-sm max-w-sm mx-auto">
-              You haven't recorded any meetings with Notemind yet. Paste a link above to get started.
+            <button
+              onClick={fetchMeetings}
+              className="text-xs font-semibold underline underline-offset-2 shrink-0"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loadingMeetings && !meetingsError && meetings.length === 0 && (
+          <div className="border border-dashed border-border rounded-2xl p-14 text-center">
+            <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-5">
+              <Calendar size={22} className="text-muted-foreground" />
+            </div>
+            <h4 className="text-base font-semibold text-foreground mb-2">No meetings yet</h4>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Paste a meeting link above to get started. Notemind will join and handle the rest.
             </p>
           </div>
         )}
 
-        {meetings.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Meeting grid */}
+        {!loadingMeetings && meetings.length > 0 && (
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: { transition: { staggerChildren: 0.04 } },
+            }}
+          >
             {meetings.map(m => (
-              <Link key={m.id} href={`/dashboard/meetings/${m.id}`} className="group block">
-                <div className="bg-[#121218] border border-[#222230] rounded-xl p-5 hover:border-[#6366f1] hover:-translate-y-0.5 transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-[#6366f1]/5">
-                  <div className="flex justify-between items-start mb-4">
-                    <StatusBadge status={m.status} />
-                    <div className="flex items-center gap-1.5 text-xs text-[#8b8b9f] font-medium bg-[#0a0a0f] px-2 py-1 rounded-md border border-[#222230]">
-                      <Clock size={12} />
-                      {new Date(m.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </div>
-                  </div>
-                  
-                  <h4 className="text-[#f8f8fa] font-medium mb-1 truncate group-hover:text-[#6366f1] transition-colors">
-                    {m.meeting_url ? m.meeting_url.replace("https://", "") : "Uploaded Audio Meeting"}
-                  </h4>
-                  <p className="text-[#8b8b9f] text-xs font-mono">ID: {m.id.slice(0, 8)}</p>
-                </div>
-              </Link>
+              <motion.div
+                key={m.id}
+                variants={{
+                  hidden: { opacity: 0, y: 8 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+              >
+                <MeetingCard meeting={m} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </section>
-
     </div>
   );
 }
