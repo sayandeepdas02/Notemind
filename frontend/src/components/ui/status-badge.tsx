@@ -8,17 +8,17 @@ const STATUS_CONFIG: Record<
   MeetingStatus,
   { bg: string; text: string; dot: string; label: string; pulse: boolean }
 > = {
-  pending:               { bg: 'bg-blue-500/10',   text: 'text-blue-400',   dot: 'bg-blue-500',   label: 'Pending',      pulse: false },
-  joining:               { bg: 'bg-blue-500/10',   text: 'text-blue-400',   dot: 'bg-blue-500',   label: 'Joining',      pulse: true  },
-  waiting_for_admission: { bg: 'bg-yellow-500/10', text: 'text-yellow-400', dot: 'bg-yellow-500', label: 'Waiting',      pulse: true  },
-  admitted:              { bg: 'bg-green-500/10',  text: 'text-green-400',  dot: 'bg-green-500',  label: 'Admitted',     pulse: true  },
-  recording:             { bg: 'bg-green-500/10',  text: 'text-green-400',  dot: 'bg-green-500',  label: 'Recording',    pulse: true  },
-  processing:            { bg: 'bg-purple-500/10', text: 'text-purple-400', dot: 'bg-purple-500', label: 'Processing',   pulse: true  },
-  completed:             { bg: 'bg-white/5',       text: 'text-zinc-400',   dot: 'bg-zinc-500',   label: 'Completed',    pulse: false },
-  failed:                { bg: 'bg-red-500/10',    text: 'text-red-400',    dot: 'bg-red-500',    label: 'Failed',       pulse: false },
-  denied:                { bg: 'bg-red-500/10',    text: 'text-red-400',    dot: 'bg-red-500',    label: 'Denied',       pulse: false },
-  disconnected:          { bg: 'bg-orange-500/10', text: 'text-orange-400', dot: 'bg-orange-500', label: 'Disconnected', pulse: false },
-  ended:                 { bg: 'bg-white/5',       text: 'text-zinc-400',   dot: 'bg-zinc-500',   label: 'Ended',        pulse: false },
+  pending:               { bg: 'bg-blue-50',    text: 'text-blue-600',   dot: 'bg-blue-400',   label: 'Pending',      pulse: false },
+  joining:               { bg: 'bg-blue-50',    text: 'text-blue-600',   dot: 'bg-blue-500',   label: 'Joining',      pulse: true  },
+  waiting_for_admission: { bg: 'bg-yellow-50',  text: 'text-yellow-700', dot: 'bg-yellow-500', label: 'Waiting',      pulse: true  },
+  admitted:              { bg: 'bg-green-50',   text: 'text-green-700',  dot: 'bg-green-500',  label: 'Admitted',     pulse: true  },
+  recording:             { bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-500',    label: 'Live',         pulse: true  },
+  processing:            { bg: 'bg-purple-50',  text: 'text-purple-600', dot: 'bg-purple-500', label: 'Processing',   pulse: true  },
+  completed:             { bg: 'bg-gray-100',   text: 'text-gray-600',   dot: 'bg-gray-400',   label: 'Completed',    pulse: false },
+  failed:                { bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-500',    label: 'Failed',       pulse: false },
+  denied:                { bg: 'bg-red-50',     text: 'text-red-600',    dot: 'bg-red-500',    label: 'Denied',       pulse: false },
+  disconnected:          { bg: 'bg-orange-50',  text: 'text-orange-600', dot: 'bg-orange-500', label: 'Disconnected', pulse: false },
+  ended:                 { bg: 'bg-gray-100',   text: 'text-gray-500',   dot: 'bg-gray-400',   label: 'Ended',        pulse: false },
 };
 
 interface StatusBadgeProps {
@@ -40,7 +40,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     >
       <span
         className={cn(
-          'w-1.5 h-1.5 rounded-full',
+          'w-1.5 h-1.5 rounded-full shrink-0',
           config.dot,
           config.pulse && 'animate-pulse'
         )}

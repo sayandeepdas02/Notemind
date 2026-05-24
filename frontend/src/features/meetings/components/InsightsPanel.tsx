@@ -4,7 +4,7 @@
 // Displays streaming-ready structured summaries, decisions, and action items
 // Empty state adapts to live vs. post-meeting context
 
-import { FileText, Target, CheckCircle2, Users, Loader2, Sparkles } from 'lucide-react';
+import { FileText, Target, CheckCircle2, Users, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MeetingIntelligence, ActionItem } from '@/types/api';
 
@@ -85,15 +85,116 @@ function InsightsEmptyState({ isLive }: InsightsEmptyProps) {
   );
 }
 
+// ── Standup View ─────────────────────────────────────────────
+// Key points from standup meetings follow "Name: Yesterday X. Today Y. Blocked Z." format.
+
+function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
+  const yesterday = intelligence.key_points.filter(kp =>
+    kp.toLowerCase().includes('yesterday') || kp.toLowerCase().includes('did ')
+  );
+  const today = intelligence.key_points.filter(kp =>
+    kp.toLowerCase().includes('today') || kp.toLowerCase().includes('doing')
+  );
+  const blockers = intelligence.action_items.filter(item =>
+    item.task.toLowerCase().includes('blocker') || item.task.toLowerCase().includes('blocked')
+  );
+  const otherItems = intelligence.action_items.filter(item =>
+    !item.task.toLowerCase().includes('blocker') && !item.task.toLowerCase().includes('blocked')
+  );
+
+  // Fallback: if we can't split, show all key_points as "updates"
+  const allPoints = intelligence.key_points;
+  const canSplit = yesterday.length > 0 || today.length > 0;
+
+  return (
+    <div className="space-y-6">
+      {intelligence.summary && (
+        <div>
+          <SectionHeader icon={FileText} label="Team summary" />
+          <div className="bg-background border border-border rounded-xl p-4 text-sm text-foreground/80 leading-relaxed">
+            {intelligence.summary}
+          </div>
+        </div>
+      )}
+
+      {canSplit ? (
+        <>
+          {yesterday.length > 0 && (
+            <div>
+              <SectionHeader icon={CheckCircle2} label="Yesterday" />
+              <ul className="space-y-2.5">
+                {yesterday.map((kp, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-foreground/80">
+                    <span className="text-green-400 mt-0.5 shrink-0">✓</span>
+                    <span className="leading-relaxed">{kp}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {today.length > 0 && (
+            <div>
+              <SectionHeader icon={Target} label="Today" />
+              <ul className="space-y-2.5">
+                {today.map((kp, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-foreground/80">
+                    <span className="text-accent mt-0.5 shrink-0">›</span>
+                    <span className="leading-relaxed">{kp}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      ) : (
+        <div>
+          <SectionHeader icon={Target} label="Updates" />
+          <ul className="space-y-2.5">
+            {allPoints.map((kp, i) => (
+              <li key={i} className="flex gap-3 text-sm text-foreground/80">
+                <span className="text-accent mt-0.5 shrink-0">›</span>
+                <span className="leading-relaxed">{kp}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {blockers.length > 0 && (
+        <div>
+          <SectionHeader icon={AlertCircle} label="Blockers" />
+          <div className="space-y-2">
+            {blockers.map((item, i) => (
+              <ActionItemCard key={i} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {otherItems.length > 0 && (
+        <div>
+          <SectionHeader icon={CheckCircle2} label={`Action items (${otherItems.length})`} />
+          <div className="space-y-2">
+            {otherItems.map((item, i) => (
+              <ActionItemCard key={i} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────
 
 interface InsightsPanelProps {
   intelligence: MeetingIntelligence | null;
   isLive: boolean;
+  meetingType?: string;
   className?: string;
 }
 
-export function InsightsPanel({ intelligence, isLive, className }: InsightsPanelProps) {
+export function InsightsPanel({ intelligence, isLive, meetingType, className }: InsightsPanelProps) {
   return (
     <div className={cn('flex flex-col h-full', className)}>
       {/* Header */}
@@ -114,6 +215,8 @@ export function InsightsPanel({ intelligence, isLive, className }: InsightsPanel
       <div className="flex-1 overflow-y-auto px-5 py-5">
         {!intelligence ? (
           <InsightsEmptyState isLive={isLive} />
+        ) : meetingType === 'standup' ? (
+          <StandupView intelligence={intelligence} />
         ) : (
           <div className="space-y-8">
             {/* Executive Summary */}

@@ -3,47 +3,263 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Play, Video, Calendar, Clock, Loader2, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  Play, Video, Clock, Loader2, AlertCircle, ArrowRight,
+  Upload, Calendar, Search, RefreshCw,
+} from 'lucide-react';
 
 import { api, APIError } from '@/lib/api';
-import type { Meeting, MeetingJoinResponse } from '@/types/api';
+import type { Meeting, MeetingJoinResponse, MeetingProvider } from '@/types/api';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { MeetingCardSkeleton } from '@/components/ui/skeleton';
-import { Panel } from '@/components/ui/panel';
+import { cn } from '@/lib/utils';
+
+// ── Helpers ───────────────────────────────────────────────────
+
+function parseMeetTitle(meeting: Meeting): string {
+  if (meeting.title) return meeting.title;
+  if (meeting.meeting_url) {
+    if (meeting.meeting_url.includes('meet.google.com')) {
+      const match = meeting.meeting_url.match(/meet\.google\.com\/([a-z0-9-]+)/i);
+      if (match) return `Meet: ${match[1]}`;
+    }
+    if (meeting.meeting_url.includes('zoom.us')) return 'Zoom meeting';
+  }
+  if (meeting.provider === 'upload') return 'Uploaded Recording';
+  return 'Untitled Meeting';
+}
+
+function formatDuration(seconds?: number | null, status?: string): string | null {
+  if (seconds == null) {
+    if (status && ['recording', 'admitted', 'joining', 'waiting_for_admission'].includes(status))
+      return 'In progress';
+    return null;
+  }
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function relativeDate(isoString: string): string {
+  const date = new Date(isoString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return 'Just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterdayStart = new Date(todayStart.getTime() - 86400000);
+
+  if (date >= todayStart)
+    return `Today ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  if (date >= yesterdayStart) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ── Provider badge ────────────────────────────────────────────
+
+const PROVIDER_STYLES: Record<MeetingProvider, { label: string; className: string }> = {
+  google_meet: { label: 'Google Meet', className: 'bg-green-50 text-green-700 border-green-200' },
+  zoom:        { label: 'Zoom',        className: 'bg-blue-50 text-blue-700 border-blue-200'   },
+  upload:      { label: 'Uploaded',    className: 'bg-gray-100 text-gray-500 border-gray-200'  },
+};
+
+function ProviderBadge({ provider }: { provider: MeetingProvider }) {
+  const config = PROVIDER_STYLES[provider] ?? PROVIDER_STYLES.upload;
+  return (
+    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border', config.className)}>
+      <Video size={10} className="shrink-0" />
+      {config.label}
+    </span>
+  );
+}
+
+// ── Sort / filter ─────────────────────────────────────────────
+
+type FilterMode = 'all' | 'live' | 'completed' | 'uploaded';
+
+function filterMeetings(meetings: Meeting[], mode: FilterMode): Meeting[] {
+  if (mode === 'live') return meetings.filter(m => ['joining','waiting_for_admission','admitted','recording'].includes(m.status));
+  if (mode === 'completed') return meetings.filter(m => ['completed','ended'].includes(m.status));
+  if (mode === 'uploaded') return meetings.filter(m => m.provider === 'upload');
+  return meetings;
+}
 
 // ── Meeting Card ──────────────────────────────────────────────
 
-function MeetingCard({ meeting }: { meeting: Meeting }) {
-  const label = meeting.title
-    ?? meeting.meeting_url?.replace('https://', '')
-    ?? 'Uploaded Recording';
+function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
+  const title = parseMeetTitle(meeting);
+  const duration = formatDuration(meeting.duration_seconds, meeting.status);
+  const isCompleted = ['completed', 'ended'].includes(meeting.status);
 
   return (
-    <Link href={`/dashboard/meetings/${meeting.id}`} className="group block">
-      <Panel
-        variant="default"
-        padding="none"
-        className="p-5 hover:border-accent/40 hover:-translate-y-px transition-all duration-200 hover:shadow-md hover:shadow-accent/5"
-      >
-        <div className="flex items-start justify-between mb-3 gap-2">
-          <StatusBadge status={meeting.status} />
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium bg-surface-3 px-2 py-1 rounded-md border border-border">
-            <Clock size={11} />
-            {new Date(meeting.created_at).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.04 }}
+    >
+      <Link href={`/dashboard/meetings/${meeting.id}`} className="group block">
+        <div className="bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 hover:shadow-sm hover:-translate-y-px transition-all duration-200">
+          {/* Top row */}
+          <div className="flex items-center justify-between mb-3 gap-2">
+            <ProviderBadge provider={meeting.provider} />
+            <StatusBadge status={meeting.status} />
+          </div>
+
+          {/* Title */}
+          <h4 className="text-[15px] font-medium text-gray-900 mb-2 truncate group-hover:text-green-700 transition-colors flex items-center gap-1.5">
+            {title}
+            <ArrowRight size={13} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0 text-green-600" />
+          </h4>
+
+          {/* Meta */}
+          <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
+            <span className="flex items-center gap-1">
+              <Clock size={11} />
+              {relativeDate(meeting.created_at)}
+            </span>
+            {duration && (
+              <span className="flex items-center gap-1">
+                <Video size={11} />
+                {duration}
+              </span>
+            )}
+          </div>
+
+          {/* AI summary preview (completed only) */}
+          {isCompleted && (
+            <div className="bg-gray-50 rounded-lg px-3 py-2 mt-2">
+              <p className="text-sm text-gray-400 italic line-clamp-2 leading-relaxed">
+                AI summary will appear here once processing is complete...
+              </p>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
+            <p className="text-[11px] text-gray-400 font-mono">{meeting.id.slice(0, 8)}…</p>
+            <span className="text-xs text-green-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+              View →
+            </span>
           </div>
         </div>
-        <h4 className="text-sm font-medium text-foreground mb-1 truncate group-hover:text-accent transition-colors">
-          {label}
-        </h4>
-        <p className="text-xs text-muted-foreground font-mono">
-          {meeting.id.slice(0, 8)}…
-        </p>
-      </Panel>
-    </Link>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ── Join Form ─────────────────────────────────────────────────
+
+const MEETING_TYPES = [
+  { value: 'general',   label: 'General' },
+  { value: 'standup',   label: 'Standup' },
+  { value: 'interview', label: 'Interview' },
+  { value: 'sales',     label: 'Sales' },
+  { value: 'planning',  label: 'Planning' },
+];
+
+function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
+  const [url, setUrl] = useState('');
+  const [meetingType, setMeetingType] = useState('general');
+  const [starting, setStarting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const handleStart = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url.trim()) return;
+
+    if (!url.startsWith('https://meet.google.com/') && !url.startsWith('https://zoom.us/')) {
+      setError('Please enter a valid Google Meet or Zoom URL');
+      return;
+    }
+
+    setStarting(true);
+    setError(null);
+    try {
+      const data = await api.post<MeetingJoinResponse>('/meetings/join', {
+        meeting_url: url,
+        meeting_type: meetingType,
+      });
+      onJoined(data.meeting_id);
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : 'Failed to start meeting bot.');
+      setStarting(false);
+    }
+  };
+
+  if (!showForm) {
+    return (
+      <button
+        onClick={() => setShowForm(true)}
+        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+      >
+        <Play size={14} fill="currentColor" />
+        Join a meeting
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-700">Join a meeting</h3>
+        <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+      </div>
+
+      <form onSubmit={handleStart} className="space-y-3">
+        <input
+          type="url"
+          value={url}
+          onChange={e => { setUrl(e.target.value); setError(null); }}
+          placeholder="Paste Google Meet or Zoom link..."
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400
+                     focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+          required
+          disabled={starting}
+          autoFocus
+        />
+
+        {/* Meeting type */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {MEETING_TYPES.map(t => (
+            <button
+              key={t.value}
+              type="button"
+              disabled={starting}
+              onClick={() => setMeetingType(t.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
+                meetingType === t.value
+                  ? 'bg-green-600 text-white border-green-600'
+                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-100'
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-500 flex items-center gap-1.5">
+            <AlertCircle size={14} /> {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={starting || !url.trim()}
+          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm py-2.5 transition-colors disabled:opacity-50"
+        >
+          {starting ? <Loader2 size={15} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
+          {starting ? 'Joining...' : 'Join now →'}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -54,149 +270,119 @@ export default function DashboardHome() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loadingMeetings, setLoadingMeetings] = useState(true);
   const [meetingsError, setMeetingsError] = useState<string | null>(null);
-
-  const [url, setUrl] = useState('');
-  const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterMode>('all');
 
   const fetchMeetings = useCallback(async () => {
     setLoadingMeetings(true);
     setMeetingsError(null);
     try {
       const data = await api.get<Meeting[]>('/meetings');
-      setMeetings(data ?? []);
-    } catch (err) {
-      setMeetingsError(
-        err instanceof APIError ? err.message : 'Failed to load meetings.'
+      // Sort by newest first
+      const sorted = (data ?? []).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
+      setMeetings(sorted);
+    } catch (err) {
+      setMeetingsError(err instanceof APIError ? err.message : 'Failed to load meetings.');
     } finally {
       setLoadingMeetings(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchMeetings();
-  }, [fetchMeetings]);
+  useEffect(() => { fetchMeetings(); }, [fetchMeetings]);
 
-  const handleStartMeeting = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.trim()) return;
-
-    if (!url.startsWith('https://meet.google.com/') && !url.startsWith('https://zoom.us/')) {
-      setStartError('Please enter a valid Google Meet or Zoom URL');
-      return;
-    }
-
-    setStarting(true);
-    setStartError(null);
-
-    // Optimistic: inject a placeholder meeting card immediately
-    const optimisticId = `optimistic-${Date.now()}`;
-    const optimistic: Meeting = {
-      id: optimisticId,
-      workspace_id: '',
-      meeting_url: url,
-      status: 'joining',
-      provider: url.includes('zoom') ? 'zoom' : 'google_meet',
-      created_at: new Date().toISOString(),
-    };
-    setMeetings(prev => [optimistic, ...prev]);
-
-    try {
-      const data = await api.post<MeetingJoinResponse>('/meetings/join', {
-        meeting_url: url,
-      });
-      router.push(`/dashboard/meetings/${data.meeting_id}`);
-    } catch (err) {
-      setStartError(
-        err instanceof APIError ? err.message : 'Failed to start meeting bot.'
-      );
-      // Roll back the optimistic card
-      setMeetings(prev => prev.filter(m => m.id !== optimisticId));
-      setStarting(false);
-    }
+  const handleJoined = (id: string) => {
+    router.push(`/dashboard/meetings/${id}`);
   };
 
+  const filtered = filterMeetings(meetings, filter);
+
+  const FILTER_TABS: { id: FilterMode; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'live', label: 'Live' },
+    { id: 'completed', label: 'Completed' },
+    { id: 'uploaded', label: 'Uploaded' },
+  ];
+
   return (
-    <div className="p-5 lg:p-8 max-w-7xl mx-auto space-y-10">
+    <div className="p-5 lg:p-8 max-w-6xl mx-auto">
 
-      {/* ── Start Meeting ────────────────────────────────────── */}
-      <section>
-        <Panel padding="lg" className="relative overflow-hidden">
-          {/* Ambient glow */}
-          <div className="absolute top-0 right-0 w-72 h-72 bg-accent opacity-[0.04] rounded-full blur-3xl -translate-y-1/3 translate-x-1/3 pointer-events-none" />
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-semibold text-gray-900">Meetings</h1>
+        <JoinForm onJoined={handleJoined} />
+      </div>
 
-          <div className="relative z-10 max-w-2xl">
-            <h2 className="text-xl font-bold text-foreground mb-1 flex items-center gap-2">
-              <Video size={20} className="text-accent" />
-              Start a new recording
-            </h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Paste a Google Meet or Zoom link. Notemind will join, transcribe, and summarize automatically.
-            </p>
+      {/* Join form (expanded state managed inside component above) */}
 
-            <form onSubmit={handleStartMeeting} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="url"
-                value={url}
-                onChange={e => { setUrl(e.target.value); setStartError(null); }}
-                placeholder="https://meet.google.com/abc-defg-hij"
-                className="flex-1 bg-background border border-border text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all disabled:opacity-50"
-                required
-                disabled={starting}
-              />
-              <button
-                type="submit"
-                disabled={starting || !url.trim()}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-              >
-                {starting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <Play size={16} fill="currentColor" />
-                )}
-                {starting ? 'Dispatching…' : 'Start Notemind'}
-              </button>
-            </form>
+      {/* Quick stats */}
+      {!loadingMeetings && meetings.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+          {[
+            { label: 'Total', value: meetings.length },
+            { label: 'Completed', value: meetings.filter(m => ['completed','ended'].includes(m.status)).length },
+            { label: 'Live now', value: meetings.filter(m => ['recording','admitted','joining'].includes(m.status)).length },
+            { label: 'This week', value: meetings.filter(m => Date.now() - new Date(m.created_at).getTime() < 7 * 86400000).length },
+          ].map(stat => (
+            <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-4">
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
-            {startError && (
-              <p className="mt-3 text-sm text-red-400 flex items-center gap-1.5">
-                <AlertCircle size={14} /> {startError}
-              </p>
-            )}
-          </div>
-        </Panel>
-      </section>
-
-      {/* ── Meetings List ─────────────────────────────────────── */}
+      {/* Meeting list */}
       <section id="meetings">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-foreground">Recent Meetings</h3>
-          {!loadingMeetings && meetings.length > 0 && (
-            <span className="text-xs text-muted-foreground">{meetings.length} total</span>
-          )}
+        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400">Recent meetings</h2>
+
+          <div className="flex items-center gap-2">
+            {/* Filter tabs */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+              {FILTER_TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    filter === tab.id
+                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
+                      : 'text-gray-500 hover:text-gray-700'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={fetchMeetings}
+              disabled={loadingMeetings}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw size={14} className={loadingMeetings ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
-        {/* Skeleton loading */}
+        {/* Skeletons */}
         {loadingMeetings && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <MeetingCardSkeleton key={i} />
-            ))}
+            {Array.from({ length: 6 }).map((_, i) => <MeetingCardSkeleton key={i} />)}
           </div>
         )}
 
         {/* Error */}
         {meetingsError && (
-          <div className="flex items-center justify-between gap-4 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400">
+          <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
             <div className="flex items-center gap-3 text-sm">
               <AlertCircle size={18} />
               <span>{meetingsError}</span>
             </div>
-            <button
-              onClick={fetchMeetings}
-              className="text-xs font-semibold underline underline-offset-2 shrink-0"
-            >
+            <button onClick={fetchMeetings} className="text-xs font-semibold underline underline-offset-2 shrink-0">
               Retry
             </button>
           </div>
@@ -204,40 +390,43 @@ export default function DashboardHome() {
 
         {/* Empty state */}
         {!loadingMeetings && !meetingsError && meetings.length === 0 && (
-          <div className="border border-dashed border-border rounded-2xl p-14 text-center">
-            <div className="w-14 h-14 rounded-full bg-surface-2 flex items-center justify-center mx-auto mb-5">
-              <Calendar size={22} className="text-muted-foreground" />
+          <div className="border-2 border-dashed border-gray-200 rounded-2xl p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-5">
+              <Calendar size={26} className="text-green-500" />
             </div>
-            <h4 className="text-base font-semibold text-foreground mb-2">No meetings yet</h4>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-              Paste a meeting link above to get started. Notemind will join and handle the rest.
+            <h3 className="text-base font-semibold text-gray-900 mb-2">No meetings yet</h3>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto mb-8">
+              Paste a meeting link above to get started, or connect your Google Calendar
+              to automatically capture scheduled meetings.
             </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Link href="/dashboard/calendar"
+                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
+                <Calendar size={16} /> Connect Calendar
+              </Link>
+              <Link href="/dashboard/upload"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
+                <Upload size={16} /> Upload Recording
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* No filter results */}
+        {!loadingMeetings && !meetingsError && meetings.length > 0 && filtered.length === 0 && (
+          <div className="text-center py-16">
+            <Search size={28} className="text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No {filter} meetings found.</p>
           </div>
         )}
 
         {/* Meeting grid */}
-        {!loadingMeetings && meetings.length > 0 && (
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.04 } },
-            }}
-          >
-            {meetings.map(m => (
-              <motion.div
-                key={m.id}
-                variants={{
-                  hidden: { opacity: 0, y: 8 },
-                  visible: { opacity: 1, y: 0 },
-                }}
-              >
-                <MeetingCard meeting={m} />
-              </motion.div>
+        {!loadingMeetings && filtered.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {filtered.map((m, i) => (
+              <MeetingCard key={m.id} meeting={m} index={i} />
             ))}
-          </motion.div>
+          </div>
         )}
       </section>
     </div>

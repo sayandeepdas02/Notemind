@@ -70,8 +70,11 @@ func (s *Service) UploadMeeting(filePath string, userID string) (string, error) 
 
 // JoinMeeting auto-detects the provider (Google Meet / Zoom / Teams), dispatches
 // the bot, persists the meeting, and starts the streaming goroutine.
-func (s *Service) JoinMeeting(meetingURL string, userID string) (*Meeting, error) {
+func (s *Service) JoinMeeting(meetingURL string, userID string, meetingType string) (*Meeting, error) {
 	meetingID := uuid.New().String()
+	if meetingType == "" {
+		meetingType = "general"
+	}
 
 	// Detect provider
 	prov, err := s.providers.Detect(meetingURL)
@@ -80,9 +83,10 @@ func (s *Service) JoinMeeting(meetingURL string, userID string) (*Meeting, error
 	}
 
 	m := &Meeting{
-		ID:         meetingID,
-		MeetingURL: meetingURL,
-		Status:     "joining",
+		ID:          meetingID,
+		MeetingURL:  meetingURL,
+		Status:      "joining",
+		MeetingType: meetingType,
 	}
 	if err := s.repo.CreateMeeting(m, userID); err != nil {
 		return nil, fmt.Errorf("failed to save meeting: %w", err)
@@ -309,11 +313,18 @@ func (s *Service) generateMeetingIntelligence(meetingID string) {
 		})
 	}
 
-	// 3. Run Pipeline
+	// 3. Run Pipeline with correct meeting-type prompt
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	summary, err := s.aiPipeline.Run(ctx, rawSegs, prompts.TypeGeneral)
+	meetingType := prompts.TypeGeneral
+	if m, err := s.repo.GetMeetingByID(meetingID); err == nil && m != nil {
+		if mt := prompts.MeetingType(m.MeetingType); mt != "" {
+			meetingType = mt
+		}
+	}
+
+	summary, err := s.aiPipeline.Run(ctx, rawSegs, meetingType)
 	if err != nil {
 		log.Error("AI pipeline failed", zap.Error(err))
 		return

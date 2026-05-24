@@ -51,7 +51,8 @@ func (h *Handler) UploadAudio(c *gin.Context) {
 // ─── Phase 2: Vexa Live Join ──────────────────────────────────────────────────
 
 type joinRequest struct {
-	MeetingURL string `json:"meeting_url" binding:"required"`
+	MeetingURL  string `json:"meeting_url" binding:"required"`
+	MeetingType string `json:"meeting_type"` // optional: general, standup, interview, sales, planning
 }
 
 // JoinMeeting dispatches a Vexa bot.
@@ -62,9 +63,12 @@ func (h *Handler) JoinMeeting(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "meeting_url is required"})
 		return
 	}
+	if req.MeetingType == "" {
+		req.MeetingType = "general"
+	}
 
 	userID := c.GetString("user_id")
-	meeting, err := h.service.JoinMeeting(req.MeetingURL, userID)
+	meeting, err := h.service.JoinMeeting(req.MeetingURL, userID, req.MeetingType)
 	if err != nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"error":  "failed to start bot",
@@ -74,8 +78,9 @@ func (h *Handler) JoinMeeting(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{
-		"meeting_id": meeting.ID,
-		"status":     meeting.Status,
+		"meeting_id":   meeting.ID,
+		"status":       meeting.Status,
+		"meeting_type": meeting.MeetingType,
 	})
 }
 

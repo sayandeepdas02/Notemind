@@ -56,6 +56,8 @@ export type MeetingStatus =
 
 export type MeetingProvider = 'google_meet' | 'zoom' | 'upload';
 
+export type MeetingType = 'general' | 'standup' | 'interview' | 'sales' | 'planning';
+
 export interface Meeting {
   id: string;
   workspace_id: string;
@@ -64,6 +66,7 @@ export interface Meeting {
   status: MeetingStatus;
   provider: MeetingProvider;
   meeting_url?: string;
+  meeting_type?: MeetingType;
   created_at: string;
   updated_at?: string;
   duration_seconds?: number;
@@ -173,6 +176,22 @@ export interface MemoryChatMessage {
 
 export interface MemoryHistoryResponse {
   messages: MemoryChatMessage[];
+}
+
+// ── API Keys ──────────────────────────────────────────────────
+
+export interface APIKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scopes: string[];
+  last_used_at?: string;
+  created_at: string;
+}
+
+export interface CreateAPIKeyResponse {
+  key: APIKey;
+  raw_key: string;
 }
 
 // ── API Primitives ────────────────────────────────────────────

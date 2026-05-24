@@ -38,8 +38,8 @@ func (h *Handler) CreateShare(c *gin.Context) {
 	// Create share token
 	token := uuid.New().String()
 	_, err = h.db.Exec(`
-		INSERT INTO meeting_shares (id, meeting_id, share_token)
-		VALUES ($1, $2, $3)`,
+		INSERT INTO meeting_shares (id, meeting_id, share_token, is_public)
+		VALUES ($1, $2, $3, true)`,
 		uuid.New().String(), meetingID, token)
 
 	if err != nil {

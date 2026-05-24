@@ -29,9 +29,13 @@ func NewRepository() *Repository {
 // ─── Meetings ────────────────────────────────────────────────────────────────
 
 func (r *Repository) CreateMeeting(m *Meeting, userID string) error {
-	query := `INSERT INTO meetings (id, user_id, audio_url, meeting_url, native_meeting_id, status, updated_at)
-	          VALUES ($1, $2, $3, $4, $5, $6, NOW())`
-	_, err := r.db.Exec(query, m.ID, userID, m.AudioURL, m.MeetingURL, m.NativeMeetingID, m.Status)
+	mt := m.MeetingType
+	if mt == "" {
+		mt = "general"
+	}
+	query := `INSERT INTO meetings (id, user_id, audio_url, meeting_url, native_meeting_id, status, meeting_type, updated_at)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`
+	_, err := r.db.Exec(query, m.ID, userID, m.AudioURL, m.MeetingURL, m.NativeMeetingID, m.Status, mt)
 	if err != nil {
 		logger.L.Error("failed to insert meeting", zap.String("meeting_id", m.ID), zap.Error(err))
 		return err
@@ -56,7 +60,8 @@ func (r *Repository) UpdateMeetingProvider(id, providerName string) error {
 func (r *Repository) GetMeetings(userID string) ([]Meeting, error) {
 	rows, err := r.db.Query(`
 		SELECT id, COALESCE(audio_url,''), COALESCE(meeting_url,''),
-		       COALESCE(native_meeting_id,''), status, created_at,
+		       COALESCE(native_meeting_id,''), status,
+		       COALESCE(meeting_type,'general'), created_at,
 		       COALESCE(updated_at, created_at)
 		FROM meetings WHERE user_id = $1 ORDER BY created_at DESC`, userID)
 	if err != nil {
@@ -67,7 +72,7 @@ func (r *Repository) GetMeetings(userID string) ([]Meeting, error) {
 	var meetings []Meeting
 	for rows.Next() {
 		var m Meeting
-		if err := rows.Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status, &m.CreatedAt, &m.UpdatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status, &m.MeetingType, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, err
 		}
 		meetings = append(meetings, m)
@@ -79,10 +84,11 @@ func (r *Repository) GetMeeting(id string, userID string) (*Meeting, error) {
 	var m Meeting
 	err := r.db.QueryRow(`
 		SELECT id, COALESCE(audio_url,''), COALESCE(meeting_url,''),
-		       COALESCE(native_meeting_id,''), status, created_at,
+		       COALESCE(native_meeting_id,''), status,
+		       COALESCE(meeting_type,'general'), created_at,
 		       COALESCE(updated_at, created_at)
 		FROM meetings WHERE id = $1 AND user_id = $2`, id, userID).
-		Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status, &m.CreatedAt, &m.UpdatedAt)
+		Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status, &m.MeetingType, &m.CreatedAt, &m.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -186,7 +192,7 @@ func (r *Repository) GetSegments(meetingID string) ([]TranscriptSegment, error) 
 	for rows.Next() {
 		var s TranscriptSegment
 		var start, end sql.NullTime
-		if err := rows.Scan(&s.ID, &s.MeetingID, &s.Speaker, &s.Text, &start, &end, &s.CreatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.MeetingID, &s.Speaker, &s.Text, &start, &end, &s.SequenceID, &s.Checksum, &s.CreatedAt); err != nil {
 			return nil, err
 		}
 		if start.Valid {
@@ -261,45 +267,48 @@ func (r *Repository) SaveMeetingIntelligence(meetingID string, summary *ai.Meeti
 	}
 	defer tx.Rollback()
 
-	// 1. Insert or update summary text
-	sumID := uuid.New().String()
+	// 1. Upsert summary text — unique constraint on meeting_id prevents duplicates
 	_, err = tx.Exec(`
-		INSERT INTO summaries (id, meeting_id, summary_text) 
-		VALUES ($1, $2, $3)`,
-		sumID, meetingID, summary.Summary)
+		INSERT INTO summaries (id, meeting_id, summary_text)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (meeting_id) DO UPDATE SET summary_text = EXCLUDED.summary_text`,
+		uuid.New().String(), meetingID, summary.Summary)
 	if err != nil {
 		return err
 	}
 
-	// 2. Insert Action Items
+	// 2. Replace action items (delete + re-insert to avoid stale rows on re-run)
+	if _, err = tx.Exec(`DELETE FROM action_items WHERE meeting_id = $1`, meetingID); err != nil {
+		return err
+	}
 	for _, item := range summary.ActionItems {
-		_, err = tx.Exec(`
-			INSERT INTO action_items (id, meeting_id, task, owner) 
-			VALUES ($1, $2, $3, $4)`,
-			uuid.New().String(), meetingID, item.Task, item.Owner)
-		if err != nil {
+		if _, err = tx.Exec(`
+			INSERT INTO action_items (id, meeting_id, task, owner) VALUES ($1, $2, $3, $4)`,
+			uuid.New().String(), meetingID, item.Task, item.Owner); err != nil {
 			return err
 		}
 	}
 
-	// 3. Insert Decisions
+	// 3. Replace decisions
+	if _, err = tx.Exec(`DELETE FROM decisions WHERE meeting_id = $1`, meetingID); err != nil {
+		return err
+	}
 	for _, dec := range summary.Decisions {
-		_, err = tx.Exec(`
-			INSERT INTO decisions (id, meeting_id, decision_text) 
-			VALUES ($1, $2, $3)`,
-			uuid.New().String(), meetingID, dec)
-		if err != nil {
+		if _, err = tx.Exec(`
+			INSERT INTO decisions (id, meeting_id, decision_text) VALUES ($1, $2, $3)`,
+			uuid.New().String(), meetingID, dec); err != nil {
 			return err
 		}
 	}
 
-	// 4. Insert Key Points
+	// 4. Replace key points
+	if _, err = tx.Exec(`DELETE FROM key_points WHERE meeting_id = $1`, meetingID); err != nil {
+		return err
+	}
 	for _, kp := range summary.KeyPoints {
-		_, err = tx.Exec(`
-			INSERT INTO key_points (id, meeting_id, point_text) 
-			VALUES ($1, $2, $3)`,
-			uuid.New().String(), meetingID, kp)
-		if err != nil {
+		if _, err = tx.Exec(`
+			INSERT INTO key_points (id, meeting_id, point_text) VALUES ($1, $2, $3)`,
+			uuid.New().String(), meetingID, kp); err != nil {
 			return err
 		}
 	}
@@ -370,9 +379,76 @@ func (r *Repository) GetMeetingIntelligence(meetingID string) (*ai.MeetingSummar
 		rows.Close()
 	}
 
-	// (Participants and Timeline can be constructed dynamically or left empty as they aren't explicitly stored in separate tables according to the prompt's schema request. Alternatively, we could extract them if we added tables. For now, we will just return what's in the DB).
+	// 5. Participants — distinct speakers from transcript segments
+	pRows, err := r.db.Query(`
+		SELECT DISTINCT COALESCE(speaker, 'Unknown')
+		FROM transcript_segments
+		WHERE meeting_id = $1
+		ORDER BY 1`, meetingID)
+	if err == nil {
+		for pRows.Next() {
+			var speaker string
+			if err := pRows.Scan(&speaker); err == nil {
+				result.Participants = append(result.Participants, speaker)
+			}
+		}
+		pRows.Close()
+	}
+
+	// 6. Timeline — first 20 segments as a lightweight event log
+	tRows, err := r.db.Query(`
+		SELECT COALESCE(speaker, 'Unknown'), text, absolute_start_time
+		FROM transcript_segments
+		WHERE meeting_id = $1
+		ORDER BY sequence_id ASC
+		LIMIT 20`, meetingID)
+	if err == nil {
+		for tRows.Next() {
+			var speaker, text string
+			var startTime sql.NullTime
+			if err := tRows.Scan(&speaker, &text, &startTime); err == nil {
+				snippet := text
+				if len(snippet) > 80 {
+					snippet = snippet[:80]
+				}
+				timeStr := ""
+				if startTime.Valid {
+					timeStr = startTime.Time.Format("15:04:05")
+				}
+				result.Timeline = append(result.Timeline, ai.TimelineEvent{
+					Time:  timeStr,
+					Event: speaker + ": " + snippet,
+				})
+			}
+		}
+		tRows.Close()
+	}
 
 	return &result, nil
+}
+
+// DB exposes the underlying connection pool for internal (worker) use only.
+func (r *Repository) DB() *sql.DB { return r.db }
+
+// GetMeetingByID returns a meeting by ID without requiring a user_id check.
+// Intended for internal/worker usage where ownership is already established.
+func (r *Repository) GetMeetingByID(id string) (*Meeting, error) {
+	var m Meeting
+	err := r.db.QueryRow(`
+		SELECT id, COALESCE(audio_url,''), COALESCE(meeting_url,''),
+		       COALESCE(native_meeting_id,''), status,
+		       COALESCE(meeting_type,'general'), created_at,
+		       COALESCE(updated_at, created_at)
+		FROM meetings WHERE id = $1`, id).
+		Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status,
+			&m.MeetingType, &m.CreatedAt, &m.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &m, nil
 }
 
 // NullTime helper for nullable timestamp scans

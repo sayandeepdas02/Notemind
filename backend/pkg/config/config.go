@@ -53,6 +53,11 @@ type Config struct {
 	StorageSecretKey string
 	StorageEndpoint  string // leave empty for AWS S3
 
+	// ── Google Login OAuth (openid, email, profile) ──────────────────────────
+	GoogleAuthClientID     string
+	GoogleAuthClientSecret string
+	GoogleAuthRedirectURI  string
+
 	// ── Google Calendar OAuth ─────────────────────────────────────────────────
 	GoogleCalClientID     string
 	GoogleCalClientSecret string
@@ -66,6 +71,17 @@ type Config struct {
 	EmbeddingModel      string
 	EmbeddingDimensions int
 	MaxEmbeddingBatch   int
+
+	// ── CORS ─────────────────────────────────────────────────────────────────
+	// Comma-separated list of allowed origins, e.g. "http://localhost:3000,https://app.notemind.ai"
+	AllowedOrigins string
+
+	// FrontendURL is the base URL of the Next.js frontend, used for OAuth redirects.
+	FrontendURL string
+
+	// ── Stripe Billing ────────────────────────────────────────────────────────
+	StripeSecretKey     string
+	StripeWebhookSecret string
 }
 
 // LoadConfig reads configuration from the environment (and an optional .env file).
@@ -98,6 +114,11 @@ func LoadConfig() *Config {
 		StorageSecretKey: getEnv("STORAGE_SECRET_KEY", ""),
 		StorageEndpoint:  getEnv("STORAGE_ENDPOINT", ""),
 
+		// Google Login
+		GoogleAuthClientID:     getEnv("GOOGLE_AUTH_CLIENT_ID", ""),
+		GoogleAuthClientSecret: getEnv("GOOGLE_AUTH_CLIENT_SECRET", ""),
+		GoogleAuthRedirectURI:  getEnv("GOOGLE_AUTH_REDIRECT_URI", "http://localhost:8080/auth/google/callback"),
+
 		// Google Calendar
 		GoogleCalClientID:     getEnv("GOOGLE_CAL_CLIENT_ID", ""),
 		GoogleCalClientSecret: getEnv("GOOGLE_CAL_CLIENT_SECRET", ""),
@@ -111,6 +132,15 @@ func LoadConfig() *Config {
 		EmbeddingModel:      getEnv("EMBEDDING_MODEL", "text-embedding-3-small"),
 		EmbeddingDimensions: getEnvAsInt("EMBEDDING_DIMENSIONS", 1536),
 		MaxEmbeddingBatch:   getEnvAsInt("MAX_EMBEDDING_BATCH", 100),
+
+		// CORS
+		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
+
+		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
+
+		// Stripe
+		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),
+		StripeWebhookSecret: getEnv("STRIPE_WEBHOOK_SECRET", ""),
 	}
 }
 

@@ -11,6 +11,7 @@ import (
 	"notemind/internal/ai"
 	"notemind/internal/ai/prompts"
 	"notemind/internal/meeting"
+	"notemind/internal/notifications"
 	"notemind/internal/queue"
 	"notemind/pkg/logger"
 )
@@ -21,14 +22,21 @@ type AIHandler struct {
 	repo        *meeting.Repository
 	aiPipeline  *ai.Pipeline
 	queueClient *queue.Client
+	email       *notifications.EmailService // nil when RESEND_API_KEY is not set
 }
 
 // NewAIHandler constructs an AIHandler.
-func NewAIHandler(repo *meeting.Repository, aiPipeline *ai.Pipeline, queueClient *queue.Client) *AIHandler {
+func NewAIHandler(
+	repo *meeting.Repository,
+	aiPipeline *ai.Pipeline,
+	queueClient *queue.Client,
+	email *notifications.EmailService,
+) *AIHandler {
 	return &AIHandler{
 		repo:        repo,
 		aiPipeline:  aiPipeline,
 		queueClient: queueClient,
+		email:       email,
 	}
 }
 
@@ -72,13 +80,19 @@ func (h *AIHandler) Handle(ctx context.Context, t *asynq.Task) error {
 			log.Warn("no transcript found for meeting, skipping AI summary",
 				zap.String("meeting_id", payload.MeetingID),
 			)
-			// Not retryable — there's nothing to summarise
 			return fmt.Errorf("no transcript data available: %w", asynq.SkipRetry)
 		}
 
-		// Synthesise a single segment from the legacy blob transcript
 		segs = []meeting.TranscriptSegment{
 			{MeetingID: payload.MeetingID, Speaker: "Unknown", Text: transcript.Content},
+		}
+	}
+
+	// ── Resolve meeting type for prompt selection ─────────────────────────────
+	meetingType := prompts.TypeGeneral
+	if m, err := h.repo.GetMeetingByID(payload.MeetingID); err == nil && m != nil {
+		if mt := prompts.MeetingType(m.MeetingType); mt != "" {
+			meetingType = mt
 		}
 	}
 
@@ -93,10 +107,9 @@ func (h *AIHandler) Handle(ctx context.Context, t *asynq.Task) error {
 	}
 
 	// ── Run the LLM pipeline ──────────────────────────────────────────────────
-	summary, err := h.aiPipeline.Run(ctx, rawSegs, prompts.TypeGeneral)
+	summary, err := h.aiPipeline.Run(ctx, rawSegs, meetingType)
 	if err != nil {
 		log.Error("LLM pipeline failed", zap.Error(err))
-		// OpenAI errors are typically transient
 		return fmt.Errorf("AI pipeline failed: %w", err)
 	}
 
@@ -109,7 +122,6 @@ func (h *AIHandler) Handle(ctx context.Context, t *asynq.Task) error {
 	// ── Mark meeting completed ────────────────────────────────────────────────
 	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, "completed"); err != nil {
 		log.Error("failed to mark meeting completed", zap.Error(err))
-		// Non-fatal: intelligence is saved. Log and continue.
 	}
 
 	log.Info("AI summary job completed successfully",
@@ -121,8 +133,51 @@ func (h *AIHandler) Handle(ctx context.Context, t *asynq.Task) error {
 	// ── Enqueue the memory embedding job ──────────────────────────────────────
 	if err := h.queueClient.EnqueueEmbed(payload.MeetingID); err != nil {
 		log.Error("failed to enqueue memory embed job", zap.Error(err))
-		// Non-fatal, intelligence is already saved
+	}
+
+	// ── Send summary email (best-effort — never fails the task) ──────────────
+	if h.email != nil {
+		go h.sendSummaryEmail(payload.MeetingID, summary)
 	}
 
 	return nil
+}
+
+// sendSummaryEmail fetches the meeting owner's email and sends a summary.
+// Runs in a separate goroutine so it never blocks or fails the task.
+func (h *AIHandler) sendSummaryEmail(meetingID string, summary *ai.MeetingSummary) {
+	log := logger.With(zap.String("meeting_id", meetingID))
+
+	type ownerRow struct {
+		email   string
+		name    string
+		title   string
+		enabled bool
+	}
+
+	var row ownerRow
+	err := h.repo.DB().QueryRow(`
+		SELECT u.email, u.name, COALESCE(m.title, m.meeting_url, 'Meeting'),
+		       COALESCE(u.email_notifications_enabled, true)
+		FROM meetings m
+		JOIN users u ON u.id = m.user_id
+		WHERE m.id = $1
+	`, meetingID).Scan(&row.email, &row.name, &row.title, &row.enabled)
+	if err != nil {
+		log.Error("failed to fetch meeting owner for email", zap.Error(err))
+		return
+	}
+
+	if !row.enabled {
+		log.Info("email notifications disabled for user, skipping")
+		return
+	}
+
+	if err := h.email.SendMeetingSummary(
+		context.Background(),
+		row.email, row.name, row.title,
+		summary, meetingID,
+	); err != nil {
+		log.Error("failed to send summary email (best-effort)", zap.Error(err))
+	}
 }

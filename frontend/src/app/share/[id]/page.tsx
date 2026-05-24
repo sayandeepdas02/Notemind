@@ -20,7 +20,8 @@ export default function SharePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`http://localhost:8080/share/${id}`)
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+    fetch(`${apiBase}/share/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject("Insights not found or meeting still processing"))
       .then(data => { setIntel(data); setLoading(false); })
       .catch(e => { setError(String(e)); setLoading(false); });

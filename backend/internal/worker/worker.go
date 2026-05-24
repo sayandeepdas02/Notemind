@@ -8,6 +8,7 @@ import (
 	"notemind/internal/ai"
 	"notemind/internal/meeting"
 	"notemind/internal/memory"
+	"notemind/internal/notifications"
 	"notemind/internal/queue"
 	"notemind/internal/vexa"
 )
@@ -21,7 +22,7 @@ type Workers struct {
 	Embed         asynq.HandlerFunc
 }
 
-// NewWorkers constructs all three job handlers from the shared dependencies.
+// NewWorkers constructs all job handlers from the shared dependencies.
 func NewWorkers(
 	repo *meeting.Repository,
 	transcriber *ai.Transcriber,
@@ -30,16 +31,17 @@ func NewWorkers(
 	hub *meeting.Hub,
 	queueClient *queue.Client,
 	memoryPipeline *memory.Pipeline,
+	emailSvc *notifications.EmailService, // nil when RESEND_API_KEY not set
 ) *Workers {
 	return &Workers{
 		Transcription: NewTranscriptionHandler(repo, transcriber, queueClient),
-		AI:            NewAIHandler(repo, aiPipeline, queueClient),
+		AI:            NewAIHandler(repo, aiPipeline, queueClient, emailSvc),
 		Bot:           NewBotHandler(repo, vexaClient, hub),
 		Embed:         HandleEmbedJob(memoryPipeline, repo),
 	}
 }
 
-// Register binds all three handlers to the given ServeMux using the canonical job type strings.
+// Register binds all handlers to the given ServeMux.
 func (w *Workers) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(queue.TypeTranscriptionJob, w.Transcription.Handle)
 	mux.HandleFunc(queue.TypeAISummaryJob, w.AI.Handle)

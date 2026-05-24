@@ -242,6 +242,7 @@ func (s *SyncService) SyncUser(ctx context.Context, userID string) error {
 }
 
 func (s *SyncService) syncGoogleCalendar(ctx context.Context, conn CalendarConnection) error {
+	ctx = WithUserID(ctx, conn.UserID)
 	events, nextSyncToken, err := s.google.ListEventsDelta(ctx, conn.CalendarID, conn.SyncToken)
 	if err != nil {
 		return err

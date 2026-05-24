@@ -163,6 +163,13 @@ type SearchResult struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+// SearchResponse wraps search results with metadata, matching the frontend contract.
+type SearchResponse struct {
+	Results []SearchResult `json:"results"`
+	Total   int            `json:"total"`
+	Query   string         `json:"query"`
+}
+
 // Search performs full-text search across meetings and transcripts for the user.
 func (r *Repository) Search(ctx context.Context, userID, query string, filters SearchFilters) ([]SearchResult, error) {
 	// Build dynamic query with optional filters

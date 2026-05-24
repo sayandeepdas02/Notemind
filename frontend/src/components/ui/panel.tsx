@@ -1,12 +1,10 @@
-// Panel — the canonical surface primitive for all content panels
-// Provides consistent spacing, border, radius, and shadow behavior
-// Replaces all ad-hoc bg + border + rounded combinations
+// Panel — canonical surface primitive for all content panels
 
 import { cn } from '@/lib/utils';
 import { forwardRef } from 'react';
 
 interface PanelProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'inset' | 'glass';
+  variant?: 'default' | 'inset' | 'flat';
   padding?: 'none' | 'sm' | 'md' | 'lg';
 }
 
@@ -18,9 +16,9 @@ const PADDING = {
 };
 
 const VARIANTS = {
-  default: 'bg-surface-2 border border-border shadow-sm',
-  inset:   'bg-background border border-border shadow-inner',
-  glass:   'bg-white/[0.03] border border-white/[0.07] backdrop-blur-md shadow-sm',
+  default: 'bg-white border border-gray-100 shadow-sm',
+  inset:   'bg-gray-50 border border-gray-200',
+  flat:    'bg-white border border-gray-100',
 };
 
 export const Panel = forwardRef<HTMLDivElement, PanelProps>(
@@ -28,12 +26,7 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(
     return (
       <div
         ref={ref}
-        className={cn(
-          'rounded-2xl',
-          VARIANTS[variant],
-          PADDING[padding],
-          className
-        )}
+        className={cn('rounded-2xl', VARIANTS[variant], PADDING[padding], className)}
         {...props}
       >
         {children}
@@ -41,10 +34,8 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(
     );
   }
 );
-
 Panel.displayName = 'Panel';
 
-// PanelHeader — standardized panel header with optional title/action
 interface PanelHeaderProps {
   title: React.ReactNode;
   description?: string;
@@ -57,14 +48,10 @@ export function PanelHeader({ title, description, action, icon, className }: Pan
   return (
     <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="flex items-center gap-3 min-w-0">
-        {icon && (
-          <div className="text-accent shrink-0">{icon}</div>
-        )}
+        {icon && <div className="text-green-600 shrink-0">{icon}</div>}
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground truncate">{title}</h2>
-          {description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-          )}
+          <h2 className="text-sm font-semibold text-gray-900 truncate">{title}</h2>
+          {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}
