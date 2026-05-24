@@ -3,17 +3,18 @@ package meeting
 import "time"
 
 type Meeting struct {
-	ID              string    `json:"id"`
-	AudioURL        string    `json:"audio_url,omitempty"`
-	MeetingURL      string    `json:"meeting_url,omitempty"`
-	NativeMeetingID string    `json:"native_meeting_id,omitempty"`
-	VexaBotID       string    `json:"vexa_bot_id,omitempty"`
-	Status          string    `json:"status"` // ENUM: CREATED, SCHEDULED, JOINING, WAITING_FOR_ADMISSION, ADMITTED, RECORDING, TRANSCRIBING, RECONNECTING, DISCONNECTED, DENIED, FAILED, ENDED
-	StateReason     string    `json:"state_reason,omitempty"`
-	RetryCount      int       `json:"retry_count"`
+	ID              string     `json:"id"`
+	AudioURL        string     `json:"audio_url,omitempty"`
+	MeetingURL      string     `json:"meeting_url,omitempty"`
+	NativeMeetingID string     `json:"native_meeting_id,omitempty"`
+	VexaBotID       string     `json:"vexa_bot_id,omitempty"`
+	Status          string     `json:"status"`
+	MeetingType     string     `json:"meeting_type,omitempty"`
+	StateReason     string     `json:"state_reason,omitempty"`
+	RetryCount      int        `json:"retry_count"`
 	LastHeartbeatAt *time.Time `json:"last_heartbeat_at,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	CreatedAt       time.Time  `json:"created_at"`
+	UpdatedAt       time.Time  `json:"updated_at"`
 }
 
 type Transcript struct {

@@ -61,7 +61,7 @@ export function useMeetingStream({
 
   const sseRef = useRef<EventSource | null>(null);
   const onEndedRef = useRef(onEnded);
-  onEndedRef.current = onEnded;
+  useEffect(() => { onEndedRef.current = onEnded; });
 
   const close = useCallback(() => {
     sseRef.current?.close();

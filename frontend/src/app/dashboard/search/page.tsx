@@ -37,7 +37,7 @@ function ResultCard({ result }: { result: SearchResult }) {
             </p>
             {result.snippet && (
               <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
-                "{result.snippet}"
+                &quot;{result.snippet}&quot;
               </p>
             )}
             <p className="text-[10px] text-muted-foreground font-mono mt-1.5">
@@ -178,7 +178,7 @@ export default function GlobalSearchPage() {
         {!loading && hasSearched && results.length === 0 && !error && (
           <div className="text-center py-16 border border-dashed border-border rounded-2xl">
             <SearchIcon size={32} className="text-muted-foreground opacity-20 mx-auto mb-4" />
-            <p className="text-sm font-medium text-foreground mb-1">No results for "{lastQuery}"</p>
+            <p className="text-sm font-medium text-foreground mb-1">No results for &quot;{lastQuery}&quot;</p>
             <p className="text-xs text-muted-foreground">Try different keywords or a broader topic.</p>
           </div>
         )}
@@ -187,7 +187,7 @@ export default function GlobalSearchPage() {
         {!hasSearched && (
           <div className="text-center py-16 border border-dashed border-border rounded-2xl">
             <SearchIcon size={32} className="text-muted-foreground opacity-20 mx-auto mb-4" />
-            <p className="text-sm font-medium text-foreground mb-1">Search your organization's memory</p>
+            <p className="text-sm font-medium text-foreground mb-1">Search your organization&apos;s memory</p>
             <p className="text-xs text-muted-foreground">Every meeting, decision, and action item is searchable.</p>
           </div>
         )}

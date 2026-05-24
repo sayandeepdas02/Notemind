@@ -2,12 +2,16 @@ package main
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"notemind/internal/ai"
 	"notemind/internal/api"
+	apikeys "notemind/internal/api/keys"
 	"notemind/internal/auth"
 	"notemind/internal/automation"
+	"notemind/internal/billing"
+	"notemind/internal/calendar"
 	"notemind/internal/db"
 	"notemind/internal/health"
 	"notemind/internal/meeting"
@@ -103,8 +107,14 @@ func main() {
 	service := meeting.NewService(repo, queueClient, hub, aiPipeline, providerRegistry)
 	handler := meeting.NewHandler(service, hub)
 
+	// API Keys
+	apiKeySvc := apikeys.NewService()
+	apiKeyHandler := apikeys.NewHandler(apiKeySvc)
+	// Wire API key validator into auth middleware for nm_xxx token support
+	auth.GlobalKeyValidator = apiKeySvc
+
 	authService := auth.NewService()
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewHandler(authService, redisClient, cfg)
 	shareHandler := share.NewHandler()
 
 	orgRepo := organization.NewRepository()
@@ -126,6 +136,26 @@ func main() {
 	workspaceSvc := workspace.NewService()
 	workspaceHandler := workspace.NewHandler(workspaceSvc)
 
+	// Google Calendar
+	calSyncSvc := calendar.NewSyncService(calendar.NewRepository(), calendar.GoogleConfig{
+		ClientID:     cfg.GoogleCalClientID,
+		ClientSecret: cfg.GoogleCalClientSecret,
+		RedirectURI:  cfg.GoogleCalRedirectURI,
+	})
+	calHandler := calendar.NewHandler(calSyncSvc, cfg.FrontendURL)
+	if cfg.GoogleCalClientID == "" {
+		logger.L.Warn("GOOGLE_CAL_CLIENT_ID not set — Google Calendar OAuth will fail")
+	}
+
+	// Stripe Billing
+	var billingHandler *billing.Handler
+	if cfg.StripeSecretKey != "" {
+		stripeSvc := billing.NewStripeService(cfg.StripeSecretKey, cfg.StripeWebhookSecret)
+		billingHandler = billing.NewHandler(stripeSvc, cfg.FrontendURL)
+	} else {
+		logger.L.Warn("STRIPE_SECRET_KEY not set — billing endpoints disabled")
+	}
+
 	// ── 9. HTTP server ────────────────────────────────────────────────────────
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
@@ -144,10 +174,14 @@ func main() {
 		}
 	}()
 
+	allowedOrigins := strings.Split(cfg.AllowedOrigins, ",")
+	for i := range allowedOrigins {
+		allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Cache-Control"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Cache-Control", "Last-Event-ID"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
 	}))
@@ -156,31 +190,52 @@ func main() {
 	r.GET("/health", health.NewHandler(cfg.RedisAddr))
 
 	// Zoom OAuth
-	r.GET("/auth/zoom", func(c *gin.Context) {
+	// /auth/zoom is protected so we can extract the authenticated user_id and encode it
+	// in the state parameter. The callback is public (browser redirect from Zoom).
+	r.GET("/auth/zoom", auth.Middleware(), func(c *gin.Context) {
 		_ = zoomOAuthHandler
-		state := c.Query("state")
-		if state == "" {
-			state = "notemind"
+		userID := c.GetString("user_id")
+		// Sign a short-lived state token so the callback can verify and retrieve userID.
+		stateToken, err := auth.GenerateToken(userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "failed to generate state"})
+			return
 		}
-		c.Redirect(302, zoomOAuthSvc.AuthorizationURL(state))
+		c.Redirect(302, zoomOAuthSvc.AuthorizationURL(stateToken))
 	})
 	r.GET("/auth/zoom/callback", func(c *gin.Context) {
-		userID := c.GetString("user_id") // populated by middleware if token present
+		stateToken := c.Query("state")
+		userID, err := auth.ValidateToken(stateToken)
+		if err != nil || userID == "" {
+			c.JSON(400, gin.H{"error": "invalid or missing state"})
+			return
+		}
 		code := c.Query("code")
 		if code == "" {
 			c.JSON(400, gin.H{"error": "missing code"})
 			return
 		}
-		_, err := zoomOAuthSvc.ExchangeCode(c.Request.Context(), userID, code)
-		if err != nil {
+		if _, err := zoomOAuthSvc.ExchangeCode(c.Request.Context(), userID, code); err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(200, gin.H{"status": "zoom connected"})
+		c.Redirect(302, cfg.FrontendURL+"/dashboard/settings?zoom=connected")
 	})
 
-	// Auth
+	// Auth — real Google OAuth
+	r.GET("/auth/google/initiate", authHandler.InitiateGoogleOAuth)
+	r.GET("/auth/google/callback", authHandler.GoogleOAuthCallback)
+	// Dev-only fake login (blocked in production by handler guard)
 	r.POST("/auth/google", authHandler.GoogleLogin)
+
+	// Google Calendar OAuth
+	r.GET("/auth/google-calendar", auth.Middleware(), calHandler.InitiateOAuth)
+	r.GET("/auth/google-calendar/callback", calHandler.OAuthCallback)
+
+	// Stripe webhook (public — signature verified inside handler)
+	if billingHandler != nil {
+		r.POST("/webhooks/stripe", billingHandler.HandleWebhook)
+	}
 
 	// Public share
 	r.GET("/share/:token", shareHandler.GetSharedIntelligence)
@@ -261,6 +316,33 @@ func main() {
 		// No middleware yet to avoid cyclic dependency for now, we'll apply it at the handler level or separate package
 		workspaceG.GET("/:workspace_id/members", workspaceHandler.ListMembers)
 		workspaceG.POST("/:workspace_id/members", workspaceHandler.AddMember)
+	}
+
+	// Calendar (protected)
+	calG := r.Group("/calendar").Use(auth.Middleware())
+	{
+		calG.POST("/sync", calHandler.SyncCalendar)
+		calG.GET("/events", calHandler.ListEvents)
+		calG.GET("/status", calHandler.GetStatus)
+	}
+
+	// Billing (protected)
+	if billingHandler != nil {
+		billingG := r.Group("/billing").Use(auth.Middleware())
+		{
+			billingG.GET("/status", billingHandler.GetStatus)
+			billingG.POST("/checkout", billingHandler.CreateCheckout)
+			billingG.POST("/portal", billingHandler.CreatePortal)
+		}
+	}
+
+	// API Keys (protected)
+	apiKeysG := r.Group("/api-keys").Use(auth.Middleware())
+	{
+		apiKeysG.GET("", apiKeyHandler.ListKeys)
+		apiKeysG.POST("", apiKeyHandler.CreateKey)
+		apiKeysG.PUT("/:id", apiKeyHandler.UpdateKey)
+		apiKeysG.DELETE("/:id", apiKeyHandler.RevokeKey)
 	}
 
 	logger.L.Info("API server listening", zap.String("port", cfg.Port))

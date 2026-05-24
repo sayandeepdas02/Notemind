@@ -197,5 +197,5 @@ func (h *Handler) Search(c *gin.Context) {
 	if results == nil {
 		results = []SearchResult{}
 	}
-	c.JSON(http.StatusOK, results)
+	c.JSON(http.StatusOK, SearchResponse{Results: results, Total: len(results), Query: q})
 }

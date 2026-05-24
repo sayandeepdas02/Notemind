@@ -143,6 +143,77 @@ export function createSSEConnection(meetingId: string): EventSource {
   return new EventSource(url);
 }
 
+// ── AI Memory SSE Streaming ───────────────────────────────────
+
+function getOrCreateSessionId(): string {
+  if (typeof window === 'undefined') return crypto.randomUUID();
+  const key = 'notemind_memory_session';
+  let id = sessionStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(key, id);
+  }
+  return id;
+}
+
+export type StreamAskCallbacks = {
+  onToken: (token: string) => void;
+  onCitations?: (citations: { meeting_id: string; snippet: string }[]) => void;
+  onDone?: () => void;
+  onError?: (msg: string) => void;
+};
+
+export function streamAsk(
+  query: string,
+  callbacks: StreamAskCallbacks,
+  meetingId?: string
+): () => void {
+  const token = getToken();
+  const sessionId = getOrCreateSessionId();
+
+  const params = new URLSearchParams({ q: query, session_id: sessionId });
+  if (meetingId) params.set('meeting_id', meetingId);
+  if (token) params.set('token', token);
+
+  const url = `${API_BASE_URL}/memory/ask?${params.toString()}`;
+  const es = new EventSource(url);
+  let completed = false;
+
+  es.addEventListener('citations', (e) => {
+    try {
+      const citations = JSON.parse((e as MessageEvent).data);
+      callbacks.onCitations?.(citations);
+    } catch { /* non-fatal */ }
+  });
+
+  es.addEventListener('token', (e) => {
+    callbacks.onToken((e as MessageEvent).data);
+  });
+
+  es.addEventListener('done', () => {
+    completed = true;
+    callbacks.onDone?.();
+    es.close();
+  });
+
+  es.addEventListener('error', (e) => {
+    if (!completed) {
+      const msg = (e as MessageEvent).data ?? 'AI Memory connection error';
+      callbacks.onError?.(msg);
+    }
+    es.close();
+  });
+
+  es.onerror = () => {
+    if (!completed) {
+      callbacks.onError?.('Lost connection to AI Memory');
+    }
+    es.close();
+  };
+
+  return () => es.close();
+}
+
 // ── Session Helpers ───────────────────────────────────────────
 
 export function getStoredUser(): import('@/types/api').User | null {

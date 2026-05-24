@@ -29,9 +29,9 @@ export default function WorkspaceSetup() {
       // In the future, send invites via another API call using the 'emails' list
       
       router.push("/onboarding/calendar");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Workspace creation failed:", err);
-      setError(err.message || "Failed to create workspace");
+      setError(err instanceof Error ? err.message : "Failed to create workspace");
     } finally {
       setIsLoading(false);
     }
@@ -41,7 +41,7 @@ export default function WorkspaceSetup() {
     <div className="relative z-10">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Welcome to Notemind</h1>
-        <p className="text-[#8b8b9f]">Let's get your workspace set up before your first meeting.</p>
+        <p className="text-[#8b8b9f]">Let&apos;s get your workspace set up before your first meeting.</p>
       </div>
 
       <form onSubmit={handleContinue} className="space-y-6">

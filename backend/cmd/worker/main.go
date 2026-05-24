@@ -7,6 +7,7 @@ import (
 	"notemind/internal/db"
 	"notemind/internal/meeting"
 	"notemind/internal/memory"
+	"notemind/internal/notifications"
 	"notemind/internal/queue"
 	"notemind/internal/vexa"
 	"notemind/internal/worker"
@@ -62,8 +63,14 @@ func main() {
 	embedder := memory.NewOpenAIEmbedder(cfg.OpenAIAPIKey, cfg.EmbeddingModel)
 	memoryPipeline := memory.NewPipeline(cfg, embedder, memoryRepo)
 
+	// ── 5. Email service (best-effort, nil when key absent) ───────────────────
+	emailSvc := notifications.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom, cfg.FrontendURL)
+	if emailSvc == nil {
+		logger.L.Warn("RESEND_API_KEY not set — post-meeting emails disabled")
+	}
+
 	// ── 5. Build all worker handlers ──────────────────────────────────────────
-	workers := worker.NewWorkers(repo, transcriber, aiPipeline, vexaClient, hub, queueClient, memoryPipeline)
+	workers := worker.NewWorkers(repo, transcriber, aiPipeline, vexaClient, hub, queueClient, memoryPipeline, emailSvc)
 
 	// ── 6. Start Watchdog ─────────────────────────────────────────────────────
 	wdog := worker.NewWatchdog(repo, queueClient)

@@ -8,6 +8,7 @@ const (
 	TypeStandup   MeetingType = "standup"
 	TypeSales     MeetingType = "sales"
 	TypeInterview MeetingType = "interview"
+	TypePlanning  MeetingType = "planning"
 )
 
 // PromptSet holds the prompts required for the summarization pipeline.

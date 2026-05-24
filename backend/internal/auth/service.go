@@ -32,7 +32,7 @@ func (s *Service) UpsertUser(req GoogleLoginRequest) (*User, error) {
 	err := s.db.QueryRow(`
 		INSERT INTO users (id, email, name, avatar_url)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (email) DO UPDATE 
+		ON CONFLICT (email) DO UPDATE
 		SET name = EXCLUDED.name, avatar_url = EXCLUDED.avatar_url
 		RETURNING id, email, name, avatar_url, created_at
 	`, uuid.New().String(), req.Email, req.Name, req.AvatarURL).
@@ -44,6 +44,53 @@ func (s *Service) UpsertUser(req GoogleLoginRequest) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+// UpsertUserByGoogle upserts a user identified by their Google account.
+// If the email already exists it links the google_id and updates name/avatar.
+func (s *Service) UpsertUserByGoogle(info googleUserInfo) (*User, error) {
+	var user User
+	err := s.db.QueryRow(`
+		INSERT INTO users (id, email, name, avatar_url, google_id)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (email) DO UPDATE
+		SET name        = EXCLUDED.name,
+		    avatar_url  = EXCLUDED.avatar_url,
+		    google_id   = EXCLUDED.google_id
+		RETURNING id, email, name, avatar_url, created_at
+	`, uuid.New().String(), info.Email, info.Name, info.Picture, info.ID).
+		Scan(&user.ID, &user.Email, &user.Name, &user.AvatarURL, &user.CreatedAt)
+
+	if err != nil {
+		logger.L.Error("failed to upsert user by Google", zap.String("email", info.Email), zap.Error(err))
+		return nil, fmt.Errorf("could not save user: %w", err)
+	}
+	return &user, nil
+}
+
+// GetUserWorkspaces returns all workspaces the user belongs to, with their role in each.
+func (s *Service) GetUserWorkspaces(userID string) ([]WorkspaceSummary, error) {
+	rows, err := s.db.Query(`
+		SELECT w.id, w.name, wm.role
+		FROM workspaces w
+		JOIN workspace_members wm ON wm.workspace_id = w.id
+		WHERE wm.user_id = $1
+		ORDER BY w.name ASC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	workspaces := []WorkspaceSummary{}
+	for rows.Next() {
+		var ws WorkspaceSummary
+		if err := rows.Scan(&ws.ID, &ws.Name, &ws.Role); err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, ws)
+	}
+	return workspaces, nil
 }
 
 func GenerateToken(userID string) (string, error) {
