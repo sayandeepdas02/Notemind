@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { api, storeSession } from '@/lib/api';
 import type { AuthResponse } from '@/types/api';
 
-export default function AuthCallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -31,15 +31,11 @@ export default function AuthCallbackPage() {
 
     const finish = async () => {
       try {
-        // Store token first so api.get can use it
         localStorage.setItem('notemind_token', token);
 
-        // Fetch user + workspaces
         const data = await api.get<AuthResponse['user']>('/users/me');
         storeSession(token, data);
 
-        // Determine where to send the user
-        const workspacesRaw = localStorage.getItem('notemind_workspace');
         const workspaces = await api.get<AuthResponse['workspaces']>('/workspaces').catch(() => []);
 
         if (workspaces && workspaces.length > 0) {
@@ -68,7 +64,7 @@ export default function AuthCallbackPage() {
           <p className="text-sm text-muted-foreground mb-6">{error}</p>
           <a
             href="/auth"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-colors"
           >
             Try again
           </a>
@@ -80,9 +76,22 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="text-center">
-        <Loader2 size={32} className="animate-spin text-[#6366f1] mx-auto mb-4" />
+        <Loader2 size={32} className="animate-spin text-green-600 mx-auto mb-4" />
         <p className="text-sm text-muted-foreground">Completing sign-in…</p>
       </div>
     </div>
   );
+}
+
+const fallback = (
+  <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="text-center">
+      <Loader2 size={32} className="animate-spin text-green-600 mx-auto mb-4" />
+      <p className="text-sm text-muted-foreground">Completing sign-in…</p>
+    </div>
+  </div>
+);
+
+export default function AuthCallbackPage() {
+  return <Suspense fallback={fallback}><CallbackContent /></Suspense>;
 }
