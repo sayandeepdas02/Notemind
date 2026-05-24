@@ -1,10 +1,10 @@
 module notemind
 
-go 1.25.0
+go 1.24.0
 
 require (
-	github.com/gin-contrib/cors v1.7.7
-	github.com/gin-gonic/gin v1.12.0
+	github.com/gin-contrib/cors v1.7.0
+	github.com/gin-gonic/gin v1.10.0
 	github.com/go-redsync/redsync/v4 v4.16.0
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.19.1
