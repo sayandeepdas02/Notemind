@@ -221,7 +221,7 @@ export default function CalendarPage() {
           <div className="w-16 h-16 rounded-2xl bg-surface-3 border border-border flex items-center justify-center mx-auto mb-5">
             <CalendarDays size={28} className="text-muted-foreground" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Your calendar isn't connected</h2>
+          <h2 className="text-xl font-bold text-foreground mb-2">Your calendar isn&apos;t connected</h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
             Connect your Google Calendar so Notemind can automatically join your scheduled meetings.
           </p>

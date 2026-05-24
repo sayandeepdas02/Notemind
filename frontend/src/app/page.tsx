@@ -467,7 +467,7 @@ function BentoGrid() {
             <h3 className="text-2xl font-bold text-gray-900 mb-3">Built for real meetings</h3>
             <p className="text-gray-500 leading-relaxed text-base">
               Works with Google Meet and Zoom out of the box. Join with one click — no installs
-              required for attendees. Your bot shows up, your team doesn't have to think about it.
+              required for attendees. Your bot shows up, your team doesn&apos;t have to think about it.
             </p>
           </motion.div>
 
