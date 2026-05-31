@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { TestimonialsColumn } from '@/components/ui/testimonials-columns';
 import type { Testimonial } from '@/components/ui/testimonials-columns';
+import { Features } from '@/components/ui/features-6';
 
 // ── Social icon SVGs (lucide-react v1.x dropped brand icons) ──
 
@@ -1188,6 +1189,7 @@ export default function LandingPage() {
     <div className="text-ink selection:bg-brand-light">
       <Header />
       <Hero />
+      <Features />
       <LogoStrip />
       <FeaturesGrid />
       <AIChatSplit />
