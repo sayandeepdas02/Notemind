@@ -890,7 +890,7 @@ function Footer() {
           className="font-serif whitespace-nowrap leading-none"
           style={{
             fontSize: 'clamp(80px, 14vw, 220px)',
-            color: 'rgba(255,255,255,0.07)',
+            color: 'rgba(255,255,255,0.18)',
             lineHeight: 1,
           }}
         >
