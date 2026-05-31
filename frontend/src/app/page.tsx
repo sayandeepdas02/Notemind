@@ -1057,17 +1057,12 @@ function Footer() {
         </div>
       </div>
 
-      {/* Giant watermark — in document flow below the bottom bar.
-          Container clips the bottom of the letters so only the tops peek in,
-          matching the Kernel reference aesthetic. */}
-      <div
-        className="relative z-10 flex justify-center select-none pointer-events-none overflow-hidden"
-        style={{ height: 'clamp(72px, 9vw, 130px)' }}
-      >
+      {/* Giant watermark — full word visible, sits below the bottom bar */}
+      <div className="relative z-10 flex justify-center select-none pointer-events-none pb-6">
         <span
           className="font-serif whitespace-nowrap leading-none"
           style={{
-            fontSize: 'clamp(160px, 20vw, 290px)',
+            fontSize: 'clamp(80px, 14vw, 220px)',
             color: 'rgba(255,255,255,0.07)',
             lineHeight: 1,
           }}
