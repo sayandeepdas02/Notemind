@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from '@/components/ui/button';
-import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
-import { useScroll } from '@/components/ui/use-scroll';
+import { Header } from '@/components/ui/header-2';
 import {
   ArrowRight,
   Brain, Search, Volume2,
@@ -97,131 +95,6 @@ function CheckItem({ text }: { text: string }) {
   );
 }
 
-// ── Navbar ────────────────────────────────────────────────────
-
-function Navbar() {
-  const [open, setOpen] = useState(false);
-  const scrolled = useScroll(10);
-
-  const links = [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing',  href: '#pricing'  },
-    { label: 'About',    href: '#faq'      },
-  ];
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [open]);
-
-  return (
-    <>
-      <header
-        className={cn(
-          'fixed top-0 inset-x-0 z-50 transition-all duration-300 ease-out',
-          scrolled && !open
-            ? 'bg-[#0d1520]/90 backdrop-blur-lg border-b border-white/[0.08] shadow-lg'
-            : open
-              ? 'bg-[#0d1520]/95'
-              : 'bg-transparent',
-        )}
-      >
-        <nav className="h-[68px] flex items-center justify-between px-6 lg:px-12 max-w-[1400px] mx-auto">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <Logo size="sm" />
-            <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
-          </Link>
-
-          {/* Desktop center links */}
-          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
-            {links.map(({ label, href }) => (
-              <a
-                key={label}
-                href={href}
-                className={cn(
-                  buttonVariants({ variant: 'ghost' }),
-                  'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
-                )}
-              >
-                {label}
-              </a>
-            ))}
-          </div>
-
-          {/* Desktop CTAs */}
-          <div className="hidden md:flex items-center gap-2 ml-auto">
-            <Link
-              href="/auth"
-              className={cn(
-                buttonVariants({ variant: 'ghost' }),
-                'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
-              )}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth"
-              className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-all shadow-sm"
-            >
-              Start for free
-            </Link>
-          </div>
-
-          {/* Mobile toggle */}
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setOpen(!open)}
-            className="md:hidden ml-auto text-white hover:bg-white/10"
-            aria-label={open ? 'Close menu' : 'Open menu'}
-          >
-            <MenuToggleIcon open={open} className="size-5 text-white" duration={300} />
-          </Button>
-        </nav>
-
-        {/* Mobile drawer */}
-        <div
-          className={cn(
-            'fixed top-[68px] right-0 bottom-0 left-0 z-50 bg-[#0d1520]/98 border-t border-white/[0.08] flex flex-col md:hidden transition-all duration-200',
-            open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
-          )}
-        >
-          <div className="flex h-full flex-col justify-between gap-y-2 p-6">
-            <div className="grid gap-y-1 mt-2">
-              {links.map(({ label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    buttonVariants({ variant: 'ghost' }),
-                    'justify-start text-white/80 hover:text-white hover:bg-white/10 text-[18px] h-12',
-                  )}
-                >
-                  {label}
-                </a>
-              ))}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Link href="/auth" onClick={() => setOpen(false)}
-                className={cn(
-                  buttonVariants({ variant: 'outline' }),
-                  'w-full border-white/20 text-white hover:bg-white/10 hover:text-white',
-                )}>
-                Sign In
-              </Link>
-              <Link href="/auth" onClick={() => setOpen(false)}
-                className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]">
-                Start for free
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
-    </>
-  );
-}
 
 // ── Hero — Kernel style (sky photo + dark overlay) ───────────
 
@@ -268,7 +141,7 @@ function Hero() {
       />
 
       {/* Content — vertically centered in upper ~65% */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-44 pb-16">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-28 pb-16">
 
         {/* Small label — matches Kernel exactly */}
         <motion.p
@@ -1130,7 +1003,7 @@ function Footer() {
 export default function LandingPage() {
   return (
     <div className="bg-white text-ink selection:bg-brand-light">
-      <Navbar />
+      <Header />
       <Hero />
       <LogoStrip />
       <DashboardPreview />
