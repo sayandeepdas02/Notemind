@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Header } from '@/components/ui/header-2';
+import { NotemindMark } from '@/components/ui/notemind-mark';
 import {
   ArrowRight,
   Brain, Search, Volume2,
@@ -39,22 +40,13 @@ function IconGithub({ size = 16, className }: { size?: number; className?: strin
 }
 
 // ── Logo (shared) ─────────────────────────────────────────────
+// Thin wrapper around NotemindMark; pass className to control colour.
+// text-white → white mark (dark backgrounds)
+// text-brand  → blue mark  (light backgrounds)
 
-function Logo({ size = 'sm', invert = false }: { size?: 'sm' | 'md'; invert?: boolean }) {
-  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
-  const scale = size === 'sm' ? 1 : 1.125;
-  const bars = [7, 13, 9, 15];
-  return (
-    <div className={`${dim} rounded-xl flex items-center justify-center shrink-0`}
-      style={{ background: invert ? 'rgba(255,255,255,0.15)' : '#2563eb' }}>
-      <div className="flex items-end gap-[2.5px]">
-        {bars.map((h, i) => (
-          <div key={i} className="w-[3px] rounded-[1.5px] bg-white"
-            style={{ height: `${Math.round(h * scale)}px` }} />
-        ))}
-      </div>
-    </div>
-  );
+function Logo({ size = 'sm', className = '' }: { size?: 'sm' | 'md'; className?: string }) {
+  const h = size === 'sm' ? 'h-7' : 'h-8';
+  return <NotemindMark className={cn(h, 'w-auto', className)} />;
 }
 
 // ── Reusable primitives ───────────────────────────────────────
@@ -282,7 +274,7 @@ function DashboardPreview() {
             <div className="flex bg-white min-h-[400px]">
               <div className="w-[200px] shrink-0 bg-off-white border-r border-gray-100 p-3 flex-col gap-1 hidden sm:flex">
                 <div className="flex items-center gap-2 px-3 py-2 mb-3">
-                  <Logo size="sm" />
+                  <Logo size="sm" className="text-brand" />
                   <span className="font-serif text-[14px] text-ink">Notemind</span>
                 </div>
                 {[{ label: 'All meetings', active: true }, { label: 'Upcoming', active: false }, { label: 'Action items', active: false }, { label: 'AI Memory', active: false }, { label: 'Upload', active: false }].map(item => (
@@ -898,8 +890,8 @@ function Footer() {
 
           {/* Column 1: Logo + description + socials */}
           <div>
-            <div className="flex items-center gap-2.5 mb-4">
-              <Logo size="sm" />
+            <div className="flex items-center gap-3 mb-4">
+              <Logo size="sm" className="text-white" />
               <span className="font-serif text-white text-[20px] leading-tight">Notemind</span>
             </div>
             <p className="text-[13px] text-white/65 leading-relaxed mb-6 max-w-[210px]">

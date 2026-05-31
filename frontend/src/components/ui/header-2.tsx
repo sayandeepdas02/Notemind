@@ -5,19 +5,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
 import { useScroll } from '@/components/ui/use-scroll';
-
-function NavLogo() {
-  const bars = [7, 13, 9, 15];
-  return (
-    <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-brand">
-      <div className="flex items-end gap-[2.5px]">
-        {bars.map((h, i) => (
-          <div key={i} className="w-[3px] rounded-[1.5px] bg-white" style={{ height: `${h}px` }} />
-        ))}
-      </div>
-    </div>
-  );
-}
+import { NotemindMark } from '@/components/ui/notemind-mark';
 
 const NAV_LINKS = [
   { label: 'Features', href: '#features' },
@@ -75,9 +63,9 @@ export function Header() {
           scrolled && !open ? 'h-14 px-5' : 'h-[68px] px-6',
         )}
       >
-        {/* Logo + wordmark */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <NavLogo />
+        {/* Logo + wordmark — white mark on the always-dark nav */}
+        <Link href="/" className="flex items-center gap-3 shrink-0">
+          <NotemindMark className="h-7 w-auto text-white" />
           <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
         </Link>
 
