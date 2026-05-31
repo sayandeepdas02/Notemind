@@ -76,7 +76,7 @@ export function AIChatPanel({ meetingId, className }: AIChatPanelProps) {
     <div className={cn('flex flex-col h-full bg-white', className)}>
       {/* Header */}
       <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <Brain size={15} className="text-green-600" />
+        <Brain size={15} className="text-brand" />
         <h2 className="text-sm font-semibold text-gray-900">Ask Notemind</h2>
         <span className="ml-auto text-[10px] text-gray-400 uppercase tracking-wide font-medium">
           Meeting scope
@@ -87,8 +87,8 @@ export function AIChatPanel({ meetingId, className }: AIChatPanelProps) {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {isEmpty ? (
           <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 gap-5 px-4">
-            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-              <Brain size={18} className="text-green-600" />
+            <div className="w-10 h-10 rounded-xl bg-brand-light flex items-center justify-center">
+              <Brain size={18} className="text-brand" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-700 mb-1">Ask anything about this meeting</p>
@@ -113,7 +113,7 @@ export function AIChatPanel({ meetingId, className }: AIChatPanelProps) {
                 <div className={cn(
                   'max-w-[88%] rounded-2xl px-4 py-3 text-sm',
                   msg.role === 'user'
-                    ? 'bg-green-600 text-white rounded-br-sm'
+                    ? 'bg-brand text-white rounded-br-sm'
                     : 'bg-gray-100 text-gray-900 rounded-bl-sm'
                 )}>
                   <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -129,7 +129,7 @@ export function AIChatPanel({ meetingId, className }: AIChatPanelProps) {
                             key={i}
                             href={`/dashboard/meetings/${src.meeting_id}`}
                             title={src.snippet}
-                            className="text-[11px] px-2 py-1 bg-green-50 border border-green-200 rounded-md text-green-700 hover:bg-green-100 transition-colors truncate max-w-[120px]"
+                            className="text-[11px] px-2 py-1 bg-brand-light border border-brand/20 rounded-md text-brand hover:bg-brand/15 transition-colors truncate max-w-[120px]"
                           >
                             Meeting {src.meeting_id.slice(0, 6)}
                           </Link>
@@ -167,12 +167,12 @@ export function AIChatPanel({ meetingId, className }: AIChatPanelProps) {
             onChange={e => setInput(e.target.value)}
             placeholder="Ask about this meeting..."
             className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-4 pr-10 py-2.5 text-sm text-gray-900 placeholder:text-gray-400
-                       focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+                       focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="absolute right-2 p-1.5 text-gray-400 hover:text-green-600 disabled:opacity-30 transition-colors"
+            className="absolute right-2 p-1.5 text-ink-5 hover:text-brand disabled:opacity-30 transition-colors"
           >
             <Send size={15} />
           </button>

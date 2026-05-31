@@ -48,7 +48,7 @@ export function PanelHeader({ title, description, action, icon, className }: Pan
   return (
     <div className={cn('flex items-start justify-between gap-4', className)}>
       <div className="flex items-center gap-3 min-w-0">
-        {icon && <div className="text-green-600 shrink-0">{icon}</div>}
+        {icon && <div className="text-brand shrink-0">{icon}</div>}
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-gray-900 truncate">{title}</h2>
           {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}

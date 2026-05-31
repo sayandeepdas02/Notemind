@@ -19,10 +19,10 @@ import { StatusBadge } from '@/components/ui/status-badge';
 // ── Meeting type badge ────────────────────────────────────────
 
 const MEETING_TYPE_STYLES: Record<string, { label: string; className: string }> = {
-  standup:   { label: 'Standup',   className: 'bg-orange-50 text-orange-600 border-orange-200' },
-  interview: { label: 'Interview', className: 'bg-purple-50 text-purple-600 border-purple-200' },
-  sales:     { label: 'Sales',     className: 'bg-blue-50 text-blue-700 border-blue-200'       },
-  planning:  { label: 'Planning',  className: 'bg-teal-50 text-teal-700 border-teal-200'       },
+  standup:   { label: 'Standup',   className: 'bg-gray-100 text-ink-3 border-gray-200'  },
+  interview: { label: 'Interview', className: 'bg-gray-100 text-ink-3 border-gray-200'  },
+  sales:     { label: 'Sales',     className: 'bg-brand-light text-brand border-brand/20' },
+  planning:  { label: 'Planning',  className: 'bg-gray-100 text-ink-3 border-gray-200'  },
 };
 
 function MeetingTypeBadge({ type }: { type?: string }) {
@@ -33,7 +33,7 @@ function MeetingTypeBadge({ type }: { type?: string }) {
 
 // ── Avatar ────────────────────────────────────────────────────
 
-const AVATAR_COLORS = ['bg-brand', 'bg-teal-600', 'bg-blue-600', 'bg-purple-600', 'bg-orange-500', 'bg-red-500'];
+const AVATAR_COLORS = ['bg-brand', 'bg-brand-mid', 'bg-ink', 'bg-ink-2', 'bg-ink-3', 'bg-ink-4'];
 function hashColor(name: string) { return AVATAR_COLORS[name.length % AVATAR_COLORS.length]; }
 function initials(name: string) { return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2); }
 

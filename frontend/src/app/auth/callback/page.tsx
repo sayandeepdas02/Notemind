@@ -64,7 +64,7 @@ function CallbackContent() {
           <p className="text-sm text-muted-foreground mb-6">{error}</p>
           <a
             href="/auth"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-mid text-white rounded-xl font-semibold text-sm transition-colors"
           >
             Try again
           </a>
@@ -76,7 +76,7 @@ function CallbackContent() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="text-center">
-        <Loader2 size={32} className="animate-spin text-green-600 mx-auto mb-4" />
+        <Loader2 size={32} className="animate-spin text-brand mx-auto mb-4" />
         <p className="text-sm text-muted-foreground">Completing sign-in…</p>
       </div>
     </div>
@@ -86,7 +86,7 @@ function CallbackContent() {
 const fallback = (
   <div className="min-h-screen bg-background flex items-center justify-center p-6">
     <div className="text-center">
-      <Loader2 size={32} className="animate-spin text-green-600 mx-auto mb-4" />
+      <Loader2 size={32} className="animate-spin text-brand mx-auto mb-4" />
       <p className="text-sm text-muted-foreground">Completing sign-in…</p>
     </div>
   </div>

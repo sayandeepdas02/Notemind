@@ -28,11 +28,10 @@ function GoogleIcon() {
 function LeftPanel() {
   return (
     <div className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden bg-brand" style={{ minHeight: '100vh' }}>
-      {/* Subtle green gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-brand/90 via-brand to-navy/60" />
+      <div className="absolute inset-0 bg-gradient-to-br from-brand via-brand to-navy/80" />
       {/* Glow */}
-      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-30"
-        style={{ background: 'radial-gradient(circle, rgba(125,224,164,0.4), transparent 70%)', transform: 'translate(30%, 30%)' }} />
+      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full opacity-25"
+        style={{ background: 'radial-gradient(circle, rgba(28,128,242,0.5), transparent 70%)', transform: 'translate(30%, 30%)' }} />
 
       <div className="relative z-10">
         <div className="flex items-center gap-2.5">
@@ -54,7 +53,7 @@ function LeftPanel() {
         <ul className="space-y-4 mb-12">
           {['Real-time transcription', 'AI summaries & action items', 'Works with Google Meet & Zoom'].map(f => (
             <li key={f} className="flex items-center gap-3 text-white/90">
-              <CheckCircle size={17} className="text-green-300 shrink-0" />
+              <CheckCircle size={17} className="text-white/70 shrink-0" />
               <span className="text-[15px]">{f}</span>
             </li>
           ))}
@@ -72,8 +71,8 @@ function LeftPanel() {
       <div className="relative z-10">
         <div className="flex items-center gap-3">
           <div className="flex -space-x-2">
-            {['#1a6b3c', '#0d9488', '#2563eb'].map((c, i) => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-brand flex items-center justify-center text-white text-[10px] font-bold"
+            {['#1C80F2', '#0d1f2d', '#4B94F5'].map((c, i) => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center text-white text-[10px] font-bold"
                 style={{ background: c }}>
                 {['S', 'J', 'A'][i]}
               </div>

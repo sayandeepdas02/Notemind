@@ -29,8 +29,8 @@ function ActionItemCard({ item }: { item: ActionItem }) {
             <span className={cn(
               'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded',
               item.priority === 'high' && 'bg-red-500/10 text-red-400',
-              item.priority === 'medium' && 'bg-yellow-500/10 text-yellow-400',
-              item.priority === 'low' && 'bg-green-500/10 text-green-400',
+              item.priority === 'medium' && 'bg-gray-100 text-ink-4',
+              item.priority === 'low' && 'bg-brand/10 text-brand',
             )}>
               {item.priority}
             </span>
@@ -125,7 +125,7 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
               <ul className="space-y-2.5">
                 {yesterday.map((kp, i) => (
                   <li key={i} className="flex gap-3 text-sm text-foreground/80">
-                    <span className="text-green-400 mt-0.5 shrink-0">✓</span>
+                    <span className="text-brand mt-0.5 shrink-0">✓</span>
                     <span className="leading-relaxed">{kp}</span>
                   </li>
                 ))}
@@ -250,9 +250,9 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
                   {intelligence.decisions.map((dec, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 p-3.5 rounded-xl border border-green-500/15 bg-green-500/5"
+                      className="flex items-start gap-3 p-3.5 rounded-xl border border-brand/15 bg-brand/5"
                     >
-                      <CheckCircle2 size={14} className="text-green-400 mt-0.5 shrink-0" />
+                      <CheckCircle2 size={14} className="text-brand mt-0.5 shrink-0" />
                       <p className="text-sm text-foreground/90 leading-snug">{dec}</p>
                     </div>
                   ))}

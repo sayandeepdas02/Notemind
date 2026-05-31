@@ -54,8 +54,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
     owner:  'bg-brand-light text-brand',
-    admin:  'bg-blue-50 text-blue-700',
-    member: 'bg-gray-100 text-gray-500',
+    admin:  'bg-brand/10 text-brand',
+    member: 'bg-gray-100 text-ink-4',
   };
   return (
     <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', styles[role] ?? styles.member)}>
@@ -389,8 +389,8 @@ function IntegrationsSection() {
   const integrations = [
     {
       icon: CalendarDays,
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      iconBg: 'bg-brand-light',
+      iconColor: 'text-brand',
       name: 'Google Calendar',
       desc: 'Auto-join scheduled meetings',
       connected: calStatus?.connected ?? null,
@@ -401,8 +401,8 @@ function IntegrationsSection() {
     },
     {
       icon: Video,
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-600',
+      iconBg: 'bg-brand-light',
+      iconColor: 'text-brand',
       name: 'Zoom',
       desc: 'Join Zoom meetings automatically',
       connected: false as boolean,
@@ -491,7 +491,7 @@ function NotificationsSection() {
         ))}
       </div>
       {saved && (
-        <div className="flex items-center gap-2 text-green-700 text-[13px]">
+        <div className="flex items-center gap-2 text-brand text-[13px]">
           <Check size={15} /> Preferences saved!
         </div>
       )}
@@ -537,7 +537,7 @@ function BillingSection() {
 
       <div className="p-5 bg-navy rounded-2xl">
         <p className="text-[15px] font-semibold text-white mb-1">Upgrade to Pro</p>
-        <p className="text-[13px] text-green-200/70 mb-4">Unlimited meetings, AI Memory, and more — $18/seat/month</p>
+        <p className="text-[13px] text-white/60 mb-4">Unlimited meetings, AI Memory, and more — $18/seat/month</p>
         <button
           disabled
           title="Pro billing coming soon"

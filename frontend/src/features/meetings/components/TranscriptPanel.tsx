@@ -12,8 +12,7 @@ function formatTimestamp(iso: string): string {
 }
 
 const SPEAKER_COLORS = [
-  'bg-green-600', 'bg-teal-600', 'bg-blue-600',
-  'bg-purple-600', 'bg-orange-500', 'bg-rose-500',
+  'bg-brand', 'bg-brand-mid', 'bg-ink', 'bg-ink-2', 'bg-ink-3', 'bg-ink-4',
 ];
 
 function getSpeakerColor(speaker: string): string {
@@ -34,7 +33,7 @@ function EmptyTranscriptState({ status, connectionState }: EmptyTranscriptProps)
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-4">
         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
-          <Loader2 size={20} className="animate-spin text-green-600" />
+          <Loader2 size={20} className="animate-spin text-brand" />
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-gray-700">
@@ -53,8 +52,8 @@ function EmptyTranscriptState({ status, connectionState }: EmptyTranscriptProps)
   if (status === 'waiting_for_admission') {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-4">
-        <div className="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center">
-          <Loader2 size={20} className="animate-spin text-yellow-500" />
+        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+          <Loader2 size={20} className="animate-spin text-ink-4" />
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-gray-700">Waiting for admission</p>
@@ -67,8 +66,8 @@ function EmptyTranscriptState({ status, connectionState }: EmptyTranscriptProps)
   if (status === 'recording' || status === 'admitted') {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-4">
-        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
-          <Video size={20} className="text-green-600" />
+        <div className="w-12 h-12 rounded-full bg-brand-light flex items-center justify-center">
+          <Video size={20} className="text-brand" />
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-gray-700">Recording in progress</p>
@@ -117,12 +116,12 @@ export function TranscriptPanel({ segments, status, connectionState, className }
       {/* Header */}
       <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <AlignLeft size={15} className="text-green-600" />
+          <AlignLeft size={15} className="text-brand" />
           <h2 className="text-sm font-semibold text-gray-900">Transcript</h2>
         </div>
         <div className="flex items-center gap-2">
           {connectionState === 'reconnecting' && (
-            <span className="text-xs text-yellow-600 font-medium flex items-center gap-1">
+            <span className="text-xs text-ink-4 font-medium flex items-center gap-1">
               <Loader2 size={11} className="animate-spin" /> Reconnecting
             </span>
           )}
