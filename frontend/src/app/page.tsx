@@ -189,27 +189,10 @@ function Hero() {
         </motion.div>
       </div>
 
-      {/* Logo strip — floats on the photo, dark translucent band */}
-      <div className="relative z-10 mt-auto">
-        <div className="py-5 border-t border-white/10" style={{ background: 'rgba(13,21,32,0.55)', backdropFilter: 'blur(4px)' }}>
-          <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-white/40 mb-5">
-            Trusted by teams at
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 px-6 max-w-3xl mx-auto">
-            {['Nietzsche', 'FeatherDev', 'Spherule', 'GlobalBank', 'Linear', 'Notion'].map((name, i) => (
-              <span key={i} className="font-serif text-[17px] text-white/50 tracking-tight select-none">
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
 
-// Logo strip is now integrated into the Hero section above.
-// This null component keeps the <LogoStrip /> call in LandingPage valid.
 function LogoStrip() { return null; }
 
 // ── Dashboard Preview (mock UI) ───────────────────────────────
