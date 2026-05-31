@@ -745,58 +745,6 @@ function TranscriptSplit() {
   );
 }
 
-// ── How It Works ──────────────────────────────────────────────
-
-const STEPS = [
-  { num: 1, title: 'Connect your calendar', desc: 'Link Google Calendar in one click. Notemind detects all upcoming video meetings automatically.' },
-  { num: 2, title: 'Notemind joins the call', desc: 'Your AI notetaker joins as a participant — no app installs needed for any attendees.' },
-  { num: 3, title: 'Review and act', desc: 'Instant summaries, action items, and searchable transcripts the moment the call ends.' },
-];
-
-function HowItWorks() {
-  return (
-    <section id="how" className="bg-off-white section-divider py-24 px-6 lg:px-12">
-      <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-16">
-          <RevealWrapper>
-            <SectionLabel text="How it works" />
-            <h2 className="font-serif text-[44px] md:text-[52px] text-ink mt-5 mb-4 leading-tight tracking-tight">
-              Set up in 2 minutes,<br />value from day one
-            </h2>
-          </RevealWrapper>
-        </div>
-
-        <div className="relative">
-          {/* Dashed connector — explicit inline styles to guarantee render */}
-          <div className="hidden md:block absolute" style={{
-            top: '20px',
-            left: 'calc(16.67% + 32px)',
-            right: 'calc(16.67% + 32px)',
-            height: '2px',
-            borderTop: '2px dashed rgba(28,128,242,0.22)',
-            zIndex: 0,
-          }} />
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {STEPS.map((step, i) => (
-              <RevealWrapper key={step.num} delay={i * 0.12}>
-                <div className="relative z-10 text-center">
-                  {/* Outlined circle, not filled */}
-                  <div className="w-10 h-10 rounded-full border-2 border-brand bg-white flex items-center justify-center mx-auto mb-6 shadow-sm">
-                    <span className="font-semibold text-[15px] text-brand">{step.num}</span>
-                  </div>
-                  <h3 className="text-[17px] font-semibold text-ink mb-2">{step.title}</h3>
-                  <p className="text-[14px] text-ink-3 leading-relaxed max-w-[240px] mx-auto">{step.desc}</p>
-                </div>
-              </RevealWrapper>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 // ── Testimonials ──────────────────────────────────────────────
 
 const TESTIMONIALS: Testimonial[] = [
@@ -1244,7 +1192,6 @@ export default function LandingPage() {
       <FeaturesGrid />
       <AIChatSplit />
       <TranscriptSplit />
-      <HowItWorks />
       <Testimonials />
       <Pricing />
       <FAQ />
