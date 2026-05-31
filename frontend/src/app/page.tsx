@@ -967,15 +967,8 @@ function Footer() {
       {/* Dark overlay */}
       <div className="absolute inset-0" style={{ background: 'rgba(13,21,32,0.82)' }} />
 
-      {/* Ghost watermark — barely visible */}
-      <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 select-none pointer-events-none whitespace-nowrap font-serif leading-none"
-        style={{ fontSize: 'clamp(100px, 14vw, 200px)', color: 'rgba(255,255,255,0.025)', lineHeight: 0.85 }}
-      >
-        Notemind
-      </div>
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-16 pb-10">
+      {/* Content — sits above the watermark */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-16">
         {/* Main grid: logo col + 3 nav columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
 
@@ -1044,7 +1037,7 @@ function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-white/[0.08] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="border-t border-white/[0.08] pt-5 pb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Status indicator */}
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
@@ -1062,6 +1055,25 @@ function Footer() {
             <a href="#" className="hover:text-white/70 transition-colors">Security</a>
           </div>
         </div>
+      </div>
+
+      {/* Giant watermark — in document flow below the bottom bar.
+          Container clips the bottom of the letters so only the tops peek in,
+          matching the Kernel reference aesthetic. */}
+      <div
+        className="relative z-10 flex justify-center select-none pointer-events-none overflow-hidden"
+        style={{ height: 'clamp(72px, 9vw, 130px)' }}
+      >
+        <span
+          className="font-serif whitespace-nowrap leading-none"
+          style={{
+            fontSize: 'clamp(160px, 20vw, 290px)',
+            color: 'rgba(255,255,255,0.07)',
+            lineHeight: 1,
+          }}
+        >
+          Notemind
+        </span>
       </div>
     </footer>
   );
