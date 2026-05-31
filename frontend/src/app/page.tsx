@@ -12,6 +12,8 @@ import {
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   Plus, Minus,
 } from 'lucide-react';
+import { TestimonialsColumn } from '@/components/ui/testimonials-columns';
+import type { Testimonial } from '@/components/ui/testimonials-columns';
 
 // ── Social icon SVGs (lucide-react v1.x dropped brand icons) ──
 
@@ -465,15 +467,25 @@ function HowItWorks() {
 
 // ── Testimonials ──────────────────────────────────────────────
 
-const TESTIMONIALS = [
-  { quote: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product at Vercel', initials: 'SC', avatarBg: 'bg-brand' },
-  { quote: 'The AI memory is genuinely impressive. I asked about a decision from three months ago and got the exact quote with a timestamp. Game changer.', name: 'James Rivera', role: 'Engineering Manager at Linear', initials: 'JR', avatarBg: 'bg-brand' },
-  { quote: "We've tried every meeting tool. Notemind is the only one that actually works — action items are assigned and followed up automatically.", name: 'Priya Mehta', role: 'Founder at Loom', initials: 'PM', avatarBg: 'bg-brand' },
+const TESTIMONIALS: Testimonial[] = [
+  { text: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product · Vercel', image: 'https://randomuser.me/api/portraits/women/1.jpg' },
+  { text: 'The AI memory is genuinely impressive. I asked about a decision from three months ago and got the exact quote with a timestamp.', name: 'James Rivera', role: 'Engineering Manager · Linear', image: 'https://randomuser.me/api/portraits/men/2.jpg' },
+  { text: "We've tried every meeting tool. Notemind is the only one that actually works — action items are assigned and followed up automatically.", name: 'Priya Mehta', role: 'Founder · Loom', image: 'https://randomuser.me/api/portraits/women/3.jpg' },
+  { text: 'Our team saves hours every week. The transcription accuracy across accents is remarkable, and the summaries are ready before I even close my laptop.', name: 'Omar Raza', role: 'CTO · Stripe', image: 'https://randomuser.me/api/portraits/men/4.jpg' },
+  { text: 'I used to dread long meetings because I knew I'd lose half the context. Notemind changed that completely. Every detail is there when I need it.', name: 'Zainab Hussain', role: 'VP Engineering · Notion', image: 'https://randomuser.me/api/portraits/women/5.jpg' },
+  { text: 'The calendar integration is seamless. Notemind joins automatically, and by the time the meeting ends the summary is already in Slack.', name: 'Aliza Khan', role: 'Product Lead · Figma', image: 'https://randomuser.me/api/portraits/women/6.jpg' },
+  { text: 'Being able to search across six months of meetings in plain English is genuinely magical. I found a competitor mention from a call I barely remember.', name: 'Farhan Siddiqui', role: 'Sales Director · Intercom', image: 'https://randomuser.me/api/portraits/men/7.jpg' },
+  { text: 'Action item tracking alone is worth it. My team's follow-through rate went from 60% to over 90% in the first month.', name: 'Sana Sheikh', role: 'Head of Operations · Webflow', image: 'https://randomuser.me/api/portraits/women/8.jpg' },
+  { text: 'We onboard enterprise clients over long calls. Notemind captures every requirement so nothing slips through, and clients love the transparency.', name: 'Hassan Ali', role: 'Customer Success · HubSpot', image: 'https://randomuser.me/api/portraits/men/9.jpg' },
 ];
+
+const firstColumn  = TESTIMONIALS.slice(0, 3);
+const secondColumn = TESTIMONIALS.slice(3, 6);
+const thirdColumn  = TESTIMONIALS.slice(6, 9);
 
 function Testimonials() {
   return (
-    <section id="testimonials" className="bg-white py-24 px-6 lg:px-12">
+    <section id="testimonials" className="bg-white py-24 px-6 lg:px-12 overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <RevealWrapper>
           <div className="text-center mb-14">
@@ -484,28 +496,12 @@ function Testimonials() {
           </div>
         </RevealWrapper>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {TESTIMONIALS.map((t, i) => (
-            <RevealWrapper key={t.name} delay={i * 0.1}>
-              <div className="bg-white border border-gray-200 rounded-2xl p-7 h-full flex flex-col" style={{ boxShadow: '0 4px 24px rgba(15,26,20,0.05)' }}>
-                {/* Smaller, lighter decorative quote */}
-                <p className="font-serif text-[28px] text-ink-5/40 leading-none mb-3 select-none">&ldquo;</p>
-                <p className="text-[15px] text-ink-2 leading-[1.7] font-light flex-1 italic">
-                  {t.quote}
-                </p>
-                <div className="flex items-center gap-3 mt-6 pt-6 border-t border-gray-100">
-                  {/* Varied avatar colors */}
-                  <div className={`w-9 h-9 rounded-full ${t.avatarBg} flex items-center justify-center text-white text-[12px] font-bold shrink-0`}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-ink">{t.name}</p>
-                    <p className="text-[12px] text-ink-4">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            </RevealWrapper>
-          ))}
+        <div
+          className="flex justify-center gap-5 [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] max-h-[720px] overflow-hidden"
+        >
+          <TestimonialsColumn testimonials={firstColumn} duration={18} />
+          <TestimonialsColumn testimonials={secondColumn} className="hidden md:block" duration={23} />
+          <TestimonialsColumn testimonials={thirdColumn} className="hidden lg:block" duration={20} />
         </div>
       </div>
     </section>
