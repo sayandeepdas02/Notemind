@@ -189,27 +189,10 @@ function Hero() {
         </motion.div>
       </div>
 
-      {/* Logo strip — floats on the photo, dark translucent band */}
-      <div className="relative z-10 mt-auto">
-        <div className="py-5 border-t border-white/10" style={{ background: 'rgba(13,21,32,0.55)', backdropFilter: 'blur(4px)' }}>
-          <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-white/40 mb-5">
-            Trusted by teams at
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 px-6 max-w-3xl mx-auto">
-            {['Nietzsche', 'FeatherDev', 'Spherule', 'GlobalBank', 'Linear', 'Notion'].map((name, i) => (
-              <span key={i} className="font-serif text-[17px] text-white/50 tracking-tight select-none">
-                {name}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
 
-// Logo strip is now integrated into the Hero section above.
-// This null component keeps the <LogoStrip /> call in LandingPage valid.
 function LogoStrip() { return null; }
 
 // ── Dashboard Preview (mock UI) ───────────────────────────────
@@ -580,7 +563,7 @@ const TESTIMONIALS = [
 
 function Testimonials() {
   return (
-    <section className="bg-white py-24 px-6 lg:px-12">
+    <section id="testimonials" className="bg-white py-24 px-6 lg:px-12">
       <div className="max-w-6xl mx-auto">
         <RevealWrapper>
           <div className="text-center mb-14">
@@ -807,37 +790,60 @@ function FAQ() {
 
 function CTASection() {
   return (
-    <section
-      className="relative overflow-hidden py-28 px-6"
-      style={{
-        backgroundImage: "url('/hero-landscape.png'), linear-gradient(170deg, #0d1520 0%, #0d2035 40%, #1a4a70 100%)",
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Same dark overlay */}
-      <div className="absolute inset-0" style={{ background: 'rgba(13,21,32,0.65)' }} />
-
-      <div className="relative z-10 text-center max-w-2xl mx-auto">
+    <section className="bg-off-white py-24 px-6">
+      <div className="max-w-[960px] mx-auto">
         <RevealWrapper>
-          <p className="text-[13px] text-white/60 tracking-wide mb-5">Get Started</p>
-          <h2 className="font-serif text-[48px] md:text-[64px] text-white leading-[1.05] tracking-tight mb-5">
-            Start Automating<br />
-            Your Workflows Today
-          </h2>
-          <p className="text-[16px] font-light text-white/55 max-w-md mx-auto leading-relaxed mb-10">
-            Join teams using Notemind to capture every meeting, eliminate manual notes,
-            and act faster with AI.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a href="#how"
-              className="border border-white/30 text-white text-[15px] font-medium px-7 py-3 rounded-full hover:bg-white/10 transition-all w-full sm:w-auto text-center">
-              About us
-            </a>
-            <Link href="/auth"
-              className="bg-white hover:bg-white/90 text-[#0d1520] text-[15px] font-semibold px-7 py-3 rounded-full transition-all w-full sm:w-auto text-center flex items-center justify-center gap-1.5">
-              Start for free <ArrowRight size={15} />
-            </Link>
+          <div
+            className="relative overflow-hidden rounded-[40px] px-8 md:px-16 py-20 text-center"
+            style={{
+              backgroundImage: "url('/hero-landscape.png'), linear-gradient(170deg, #0d1520 0%, #0d2035 40%, #1a4a70 100%)",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 60%',
+              boxShadow: '0 0 0 1px rgba(28,128,242,0.18), 0 40px 100px rgba(13,21,32,0.30), 0 0 120px rgba(28,128,242,0.07)',
+            }}
+          >
+            {/* Dark overlay */}
+            <div className="absolute inset-0" style={{ background: 'rgba(13,21,32,0.72)' }} />
+
+            {/* Subtle top-center glow */}
+            <div
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[200px] pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse at center top, rgba(28,128,242,0.28), transparent 70%)', filter: 'blur(24px)' }}
+            />
+
+            <div className="relative z-10 max-w-lg mx-auto">
+              {/* Eyebrow */}
+              <p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-white/45 mb-5">
+                Get Started
+              </p>
+
+              {/* Headline */}
+              <h2 className="font-serif text-[42px] md:text-[54px] text-white leading-[1.05] tracking-tight mb-4">
+                Start Automating<br />Your Workflows Today
+              </h2>
+
+              {/* Description */}
+              <p className="text-[15px] font-light text-white/50 leading-relaxed mb-9 max-w-[360px] mx-auto">
+                Join teams using Notemind to capture every meeting, eliminate manual notes,
+                and act faster with AI.
+              </p>
+
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a
+                  href="#how"
+                  className="border border-white/25 text-white text-[14px] font-medium px-6 py-2.5 rounded-full hover:bg-white/10 transition-all w-full sm:w-auto text-center"
+                >
+                  About us
+                </a>
+                <Link
+                  href="/auth"
+                  className="bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-6 py-2.5 rounded-full transition-all w-full sm:w-auto text-center flex items-center justify-center gap-1.5"
+                >
+                  Start for free <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
           </div>
         </RevealWrapper>
       </div>
@@ -1005,7 +1011,6 @@ export default function LandingPage() {
       <Testimonials />
       <Pricing />
       <FAQ />
-      <CTASection />
       <Footer />
     </div>
   );

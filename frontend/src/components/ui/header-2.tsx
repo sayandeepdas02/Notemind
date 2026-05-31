@@ -8,9 +8,10 @@ import { useScroll } from '@/components/ui/use-scroll';
 import { NotemindMark } from '@/components/ui/notemind-mark';
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing',  href: '#pricing'  },
-  { label: 'About',    href: '#faq'      },
+  { label: 'Features',     href: '#features'     },
+  { label: 'Pricing',      href: '#pricing'      },
+  { label: 'Testimonials', href: '#testimonials' },
+  { label: 'Blog',         href: '#'             },
 ];
 
 // Use 24px threshold so top-6 (24px) sticky is already satisfied when the
@@ -94,14 +95,14 @@ export function Header() {
               'text-white/65 hover:text-white hover:bg-white/10 text-[14px]',
             )}
           >
-            Sign In
+            Get Started
           </Link>
-          <Link
-            href="/auth"
+          <a
+            href="#"
             className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-colors shadow-sm"
           >
-            Start for free
-          </Link>
+            Book a Call
+          </a>
         </div>
 
         {/* Mobile toggle */}
@@ -148,15 +149,15 @@ export function Header() {
                   'w-full border-white/20 text-white hover:bg-white/10 hover:text-white',
                 )}
               >
-                Sign In
+                Get Started
               </Link>
-              <Link
-                href="/auth"
+              <a
+                href="#"
                 onClick={() => setOpen(false)}
                 className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]"
               >
-                Start for free
-              </Link>
+                Book a Call
+              </a>
             </div>
           </div>
         </div>
