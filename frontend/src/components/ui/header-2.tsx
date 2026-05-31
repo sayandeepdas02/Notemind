@@ -40,29 +40,28 @@ export function Header() {
 
   return (
     /*
-     * Outer <header>: sticky anchor + the visual pill that transitions.
+     * Outer <header>: FIXED so the hero fills the full viewport behind it.
+     * The pill always floats at top-4 (16px gap) — the hero background is
+     * visible above it, exactly like the Trelium reference.
      *
-     * At top    → max-w-6xl, top-0, subtle border, full-height, rounded-2xl
-     * Scrolled  → max-w-4xl, top-6, glass blur, shorter height, tighter px
+     * Not scrolled → max-w-6xl  (wide, matches page content alignment)
+     * Scrolled     → max-w-4xl  (narrows into a compact glass pill)
      *
-     * transition-all at 600ms with a deceleration curve keeps it smooth
-     * and professional rather than snappy.
+     * 600ms deceleration curve keeps the size change smooth.
      */
     <header
       className={cn(
-        'sticky z-50 mx-auto w-full',
+        'fixed inset-x-0 top-4 z-50 mx-auto',
         'bg-[#0d1520]',
         'transition-all duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
         scrolled && !open
           ? [
-              'top-6',
               'max-w-4xl rounded-2xl',
               'border border-white/[0.12]',
               'bg-[#0d1520]/85 backdrop-blur-xl',
               'shadow-[0_8px_40px_rgba(0,0,0,0.45)]',
             ]
           : [
-              'top-0',
               'max-w-6xl rounded-2xl',
               'border border-white/[0.07]',
             ],

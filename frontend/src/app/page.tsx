@@ -141,7 +141,7 @@ function Hero() {
       />
 
       {/* Content — vertically centered in upper ~65% */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-28 pb-16">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-40 pb-16">
 
         {/* Small label — matches Kernel exactly */}
         <motion.p
@@ -1002,7 +1002,7 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div className="bg-white text-ink selection:bg-brand-light">
+    <div className="text-ink selection:bg-brand-light">
       <Header />
       <Hero />
       <LogoStrip />
