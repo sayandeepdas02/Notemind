@@ -53,10 +53,8 @@ function Logo({ size = 'sm', className = '' }: { size?: 'sm' | 'md'; className?:
 
 function SectionLabel({ text }: { text: string }) {
   return (
-    <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
-      <span className="w-4 h-px bg-brand" />
+    <span className="inline-flex items-center px-4 py-1.5 rounded-full border border-brand/30 bg-brand/10 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand">
       {text}
-      <span className="w-4 h-px bg-brand" />
     </span>
   );
 }
