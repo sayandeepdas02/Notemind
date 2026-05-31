@@ -37,17 +37,22 @@ export function Header() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 mx-auto w-full border-b border-transparent md:transition-all md:ease-out',
+        // Always dark — readable over both the dark hero and the rest of the page.
+        // Without this base bg the header is transparent on bg-white and all white
+        // text becomes invisible at the top of the page.
+        'sticky top-0 z-50 mx-auto w-full bg-[#0d1520]',
+        'border-b border-white/[0.06] md:transition-all md:ease-out',
+        // Scrolled desktop: shrink into a floating glass pill
         scrolled && !open && [
           'bg-[#0d1520]/90 border-white/[0.08] backdrop-blur-lg',
           'md:top-4 md:max-w-4xl md:rounded-2xl md:shadow-2xl',
         ],
-        open && 'bg-[#0d1520]/95',
       )}
     >
+      {/* position:relative so absolute center-links anchor to the nav bar */}
       <nav
         className={cn(
-          'flex h-[68px] w-full items-center justify-between px-6 lg:px-8 md:transition-all md:ease-out',
+          'relative flex h-[68px] w-full items-center justify-between px-6 lg:px-8 md:transition-all md:ease-out',
           scrolled && !open && 'md:h-14 md:px-5',
         )}
       >
@@ -57,8 +62,8 @@ export function Header() {
           <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
         </Link>
 
-        {/* Desktop center links */}
-        <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+        {/* Desktop center links — absolute so they don't push CTAs off-center */}
+        <div className="hidden md:flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {NAV_LINKS.map(({ label, href }) => (
             <a
               key={label}
@@ -102,14 +107,17 @@ export function Header() {
         </button>
       </nav>
 
-      {/* Mobile drawer — full-screen, fades in/out */}
+      {/* Mobile drawer — rendered inside the sticky header so it inherits the
+          correct stacking context; uses min-h-screen so it always fills the
+          viewport regardless of the header's current top offset */}
       <div
         className={cn(
-          'fixed top-[68px] right-0 bottom-0 left-0 z-50 bg-[#0d1520]/98 border-t border-white/[0.08] flex flex-col md:hidden transition-opacity duration-200',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          'border-t border-white/[0.08] bg-[#0d1520] md:hidden',
+          'transition-all duration-200 ease-out overflow-hidden',
+          open ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
         )}
       >
-        <div className="flex h-full flex-col justify-between p-6">
+        <div className="flex min-h-[calc(100svh-68px)] flex-col justify-between p-6">
           <div className="grid gap-y-1 mt-2">
             {NAV_LINKS.map(({ label, href }) => (
               <a
@@ -125,7 +133,7 @@ export function Header() {
               </a>
             ))}
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3 pb-6">
             <Link
               href="/auth"
               onClick={() => setOpen(false)}
