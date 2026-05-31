@@ -1,10 +1,14 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
+import { useScroll } from '@/components/ui/use-scroll';
 import {
-  ArrowRight, Menu, X,
+  ArrowRight,
   Brain, Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   Plus, Minus,
@@ -44,7 +48,7 @@ function Logo({ size = 'sm', invert = false }: { size?: 'sm' | 'md'; invert?: bo
   const bars = [7, 13, 9, 15];
   return (
     <div className={`${dim} rounded-xl flex items-center justify-center shrink-0`}
-      style={{ background: invert ? 'rgba(255,255,255,0.15)' : '#1a6b3c' }}>
+      style={{ background: invert ? 'rgba(255,255,255,0.15)' : '#2563eb' }}>
       <div className="flex items-end gap-[2.5px]">
         {bars.map((h, i) => (
           <div key={i} className="w-[3px] rounded-[1.5px] bg-white"
@@ -93,81 +97,128 @@ function CheckItem({ text }: { text: string }) {
   );
 }
 
-// ── Navbar — Kernel style (transparent on photo bg) ──────────
+// ── Navbar ────────────────────────────────────────────────────
 
 function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const scrolled = useScroll(10);
+
+  const links = [
+    { label: 'Features', href: '#features' },
+    { label: 'Pricing',  href: '#pricing'  },
+    { label: 'About',    href: '#faq'      },
+  ];
+
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
 
   return (
     <>
-      {/* Transparent nav floating over the hero photo */}
-      <nav className="fixed top-0 inset-x-0 z-50 h-[68px] flex items-center px-6 lg:px-12">
-        {/* Logo — left */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <Logo size="sm" />
-          <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
-        </Link>
-
-        {/* Nav links — absolute center */}
-        <div className="hidden md:flex items-center gap-8 text-[14px] font-normal text-white/70 absolute left-1/2 -translate-x-1/2">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#pricing"  className="hover:text-white transition-colors">Pricing</a>
-          <a href="#faq"      className="hover:text-white transition-colors">About</a>
-        </div>
-
-        {/* CTA — right (white pill, dark text — exactly Kernel) */}
-        <div className="hidden md:flex ml-auto">
-          <Link href="/auth"
-            className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm">
-            Start for free
+      <header
+        className={cn(
+          'fixed top-0 inset-x-0 z-50 transition-all duration-300 ease-out',
+          scrolled && !open
+            ? 'bg-[#0d1520]/90 backdrop-blur-lg border-b border-white/[0.08] shadow-lg'
+            : open
+              ? 'bg-[#0d1520]/95'
+              : 'bg-transparent',
+        )}
+      >
+        <nav className="h-[68px] flex items-center justify-between px-6 lg:px-12 max-w-[1400px] mx-auto">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <Logo size="sm" />
+            <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
           </Link>
-        </div>
 
-        <button
-          aria-label="Open menu"
-          className="md:hidden p-2 text-white ml-auto"
-          onClick={() => setMobileOpen(true)}
-        >
-          <Menu size={20} />
-        </button>
-      </nav>
+          {/* Desktop center links */}
+          <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+            {links.map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className={cn(
+                  buttonVariants({ variant: 'ghost' }),
+                  'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
+                )}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
 
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] flex flex-col p-6"
-            style={{ background: '#0d1520' }}
+          {/* Desktop CTAs */}
+          <div className="hidden md:flex items-center gap-2 ml-auto">
+            <Link
+              href="/auth"
+              className={cn(
+                buttonVariants({ variant: 'ghost' }),
+                'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
+              )}
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/auth"
+              className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-all shadow-sm"
+            >
+              Start for free
+            </Link>
+          </div>
+
+          {/* Mobile toggle */}
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => setOpen(!open)}
+            className="md:hidden ml-auto text-white hover:bg-white/10"
+            aria-label={open ? 'Close menu' : 'Open menu'}
           >
-            <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-2.5">
-                <Logo size="sm" />
-                <span className="font-serif text-white text-[20px]">Notemind</span>
-              </div>
-              <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="p-2 text-white/60">
-                <X size={20} />
-              </button>
-            </div>
-            <nav className="flex flex-col gap-1">
-              {[['#features','Features'],['#pricing','Pricing'],['#faq','About']].map(([href, label]) => (
-                <a key={href} href={href} onClick={() => setMobileOpen(false)}
-                  className="py-4 border-b border-white/10 text-[18px] font-medium text-white/80">
+            <MenuToggleIcon open={open} className="size-5 text-white" duration={300} />
+          </Button>
+        </nav>
+
+        {/* Mobile drawer */}
+        <div
+          className={cn(
+            'fixed top-[68px] right-0 bottom-0 left-0 z-50 bg-[#0d1520]/98 border-t border-white/[0.08] flex flex-col md:hidden transition-all duration-200',
+            open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+          )}
+        >
+          <div className="flex h-full flex-col justify-between gap-y-2 p-6">
+            <div className="grid gap-y-1 mt-2">
+              {links.map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost' }),
+                    'justify-start text-white/80 hover:text-white hover:bg-white/10 text-[18px] h-12',
+                  )}
+                >
                   {label}
                 </a>
               ))}
-            </nav>
-            <div className="mt-auto">
-              <Link href="/auth" onClick={() => setMobileOpen(false)}
-                className="block w-full text-center py-3.5 bg-white text-[#0d1520] rounded-full font-semibold">
+            </div>
+            <div className="flex flex-col gap-2">
+              <Link href="/auth" onClick={() => setOpen(false)}
+                className={cn(
+                  buttonVariants({ variant: 'outline' }),
+                  'w-full border-white/20 text-white hover:bg-white/10 hover:text-white',
+                )}>
+                Sign In
+              </Link>
+              <Link href="/auth" onClick={() => setOpen(false)}
+                className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]">
                 Start for free
               </Link>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      </header>
     </>
   );
 }
@@ -309,9 +360,9 @@ function MockMeetingCard({ m }: { m: typeof MOCK_MEETINGS[0] }) {
   return (
     <div className="bg-white rounded-xl p-4 border-l-[3px]"
       style={{
-        borderLeftColor: m.status === 'live' ? '#dc2626' : '#1a6b3c',
+        borderLeftColor: m.status === 'live' ? '#dc2626' : '#2563eb',
         border: '1px solid #f3f4f6',
-        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : '#1a6b3c'}`,
+        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : '#2563eb'}`,
         boxShadow: '0 2px 12px rgba(15,26,20,0.05)',
       }}>
       <div className="flex items-start justify-between mb-2 gap-2">
@@ -471,7 +522,7 @@ function AIChatSplit() {
           }}>
             <div className="bg-navy rounded-[14px] p-5" style={{ aspectRatio: '1.1/1' }}>
               <div className="absolute-off top-0 right-0 w-60 h-60 rounded-full opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1a6b3c, transparent 70%)', position: 'absolute' }} />
+                style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)', position: 'absolute' }} />
 
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center">
@@ -576,7 +627,7 @@ function TranscriptSplit() {
           <RevealWrapper>
             <SectionLabel text="Live Transcription" />
             <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Every word,<br /><em className="not-italic" style={{ color: '#1a6b3c' }}>perfectly captured</em>
+              Every word,<br /><em className="not-italic" style={{ color: '#2563eb' }}>perfectly captured</em>
             </h2>
             <p className="text-[16px] text-ink-3 leading-relaxed mb-10">
               Speaker-identified transcription in real-time. Our AI highlights key decisions and
@@ -773,7 +824,7 @@ function Pricing() {
                 MOST POPULAR
               </div>
               <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1a6b3c, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+                style={{ background: 'radial-gradient(circle, #2563eb, transparent 70%)', transform: 'translate(30%, -30%)' }} />
 
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-green-400/70 mb-4 relative z-10">Pro</p>
               <div className="flex items-baseline gap-1 mb-1 relative z-10">
