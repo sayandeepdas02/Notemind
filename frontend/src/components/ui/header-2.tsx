@@ -98,7 +98,9 @@ export function Header() {
             Get Started
           </Link>
           <a
-            href="#"
+            href="https://cal.com/dsayandeep/notemind-demo"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-colors shadow-sm"
           >
             Book a Call
@@ -152,7 +154,9 @@ export function Header() {
                 Get Started
               </Link>
               <a
-                href="#"
+                href="https://cal.com/dsayandeep/notemind-demo"
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setOpen(false)}
                 className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]"
               >
