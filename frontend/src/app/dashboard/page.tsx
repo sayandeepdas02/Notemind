@@ -91,7 +91,7 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
   const title = parseMeetTitle(meeting);
   const duration = formatDuration(meeting.duration_seconds, meeting.status);
   const isCompleted = ['completed', 'ended'].includes(meeting.status);
-  const hasSummary = isCompleted && (meeting as any).summary;
+  const hasSummary = isCompleted && meeting.summary;
 
   return (
     <motion.div
@@ -128,7 +128,7 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
           {hasSummary && (
             <div className="bg-brand-pale rounded-lg px-3 py-2 mt-2 border border-brand-light">
               <p className="text-[13px] text-ink-3 line-clamp-2 leading-relaxed">
-                {(meeting as any).summary}
+                {meeting.summary}
               </p>
             </div>
           )}

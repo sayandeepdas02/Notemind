@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Video, Settings, Search, Menu, X,
   Brain, LogOut, CalendarDays, Upload, FolderOpen, Zap,
-  Bell, Mic, ChevronDown, Building, Plus, Check,
+  Mic, ChevronDown, Building, Plus, Check,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { clearSession, getStoredUser } from '@/lib/api';
@@ -296,7 +296,7 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
             <p className="text-[11px] text-ink-5 truncate">{user.email}</p>
           </div>
           <button
-            onClick={() => { clearSession(); window.location.href = '/auth'; }}
+            onClick={() => { clearSession(); router.push('/auth'); }}
             aria-label="Sign out"
             className="p-1.5 text-ink-5 hover:text-red-500 transition-colors rounded-md hover:bg-red-50"
           >

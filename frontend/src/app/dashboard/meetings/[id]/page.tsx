@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Share2, StopCircle, Users, Clock,
-  CheckCircle2, FileText, Target, Mic, Brain, Copy,
+  CheckCircle2, FileText, Target, Brain, Copy,
   Check, Download, AlignLeft, MessageSquare,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,7 +15,6 @@ import { useMeetingStream, LIVE_STATUSES, ENDED_STATUSES } from '@/features/meet
 import { TranscriptPanel } from '@/features/meetings/components/TranscriptPanel';
 import { AIChatPanel } from '@/features/meetings/components/AIChatPanel';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { cn } from '@/lib/utils';
 
 // ── Meeting type badge ────────────────────────────────────────
 
@@ -164,14 +163,14 @@ const INSIGHT_TABS: { id: InsightTab; label: string; icon: React.ElementType }[]
 ];
 
 function InsightsPanel({
-  intelligence, isLive, meetingType, className,
-}: { intelligence: MeetingIntelligence | null; isLive: boolean; meetingType?: string; className?: string; }) {
+  intelligence, isLive, className,
+}: { intelligence: MeetingIntelligence | null; isLive: boolean; className?: string; }) {
   const [activeTab, setActiveTab] = useState<InsightTab>('summary');
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
 
   const toggleItem = (i: number) => setCheckedItems(prev => {
     const next = new Set(prev);
-    next.has(i) ? next.delete(i) : next.add(i);
+    if (next.has(i)) { next.delete(i); } else { next.add(i); }
     return next;
   });
 
@@ -539,7 +538,7 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-100">
-            <InsightsPanel intelligence={intelligence} isLive={isLive} meetingType={meeting?.meeting_type} className="flex-1" />
+            <InsightsPanel intelligence={intelligence} isLive={isLive} className="flex-1" />
           </div>
 
           <div className="w-[280px] shrink-0 flex flex-col overflow-hidden">
@@ -572,7 +571,7 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
             <TranscriptPanel segments={segments} status={status} connectionState={connectionState} className="h-full" />
           )}
           {mobilePanel === 'summary' && (
-            <InsightsPanel intelligence={intelligence} isLive={isLive} meetingType={meeting?.meeting_type} className="h-full" />
+            <InsightsPanel intelligence={intelligence} isLive={isLive} className="h-full" />
           )}
           {mobilePanel === 'chat' && (
             <AIChatPanel meetingId={id} className="h-full" />

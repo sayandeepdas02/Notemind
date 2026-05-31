@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, Menu, X,
-  Mic, Brain, Calendar, Search,
+  Mic, Brain, Search,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   Plus, Minus, Twitter, Linkedin, Github,
   Sparkles, Play, CheckCircle2,
