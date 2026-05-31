@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils';
 import { Header } from '@/components/ui/header-2';
 import { NotemindMark } from '@/components/ui/notemind-mark';
 import {
-  ArrowRight,
+  ArrowRight, ChevronRight, Check,
   Brain, Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
+  TrendingUp, User, Building,
   Plus, Minus,
 } from 'lucide-react';
 import { TestimonialsColumn } from '@/components/ui/testimonials-columns';
@@ -243,171 +244,502 @@ function FeaturesGrid() {
   );
 }
 
-// ── AI Chat Split ─────────────────────────────────────────────
-
-const CHAT_BUBBLES = [
-  { role: 'user', text: 'What did we decide about pricing in the board meeting last month?' },
-  { role: 'ai',   text: 'The team agreed to move to per-seat pricing at $18/user/mo, effective Q4. Marcus and Sara were assigned to update the pricing page.', source: 'Board Meeting · Sep 12' },
-  { role: 'user', text: 'Did Marcus complete that task?' },
-  { role: 'ai',   text: 'Yes — Marcus confirmed the pricing page was updated and live in the Design Review.', source: 'Design Review · Sep 19' },
-];
+// ── AI Memory — Knowledge Graph ───────────────────────────────
 
 function AIChatSplit() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  const SOURCES = [
+    { icon: Users,      name: 'Weekly Sync',     meta: 'Mon · 9:00 AM',  bg: 'bg-brand'     },
+    { icon: TrendingUp, name: 'Sales Call',       meta: 'Yesterday · 3pm', bg: 'bg-ink'      },
+    { icon: User,       name: '1:1 with Manager', meta: 'Tue · 10:00 AM', bg: 'bg-brand-mid' },
+    { icon: Clock,      name: 'Sprint Planning',  meta: 'Mon · 2:00 PM',  bg: 'bg-ink-2'    },
+    { icon: Building,   name: 'Board Meeting',    meta: 'Last Wed · 1pm', bg: 'bg-ink-3'    },
+  ];
+
+  const INDEX_TAGS = ['Transcripts', 'Decisions', 'Actions', 'People', 'Summaries'];
+
   return (
-    <section className="bg-off-white section-divider py-24 px-6 lg:px-12">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-        <div>
+    <section className="bg-off-white section-divider py-24 px-6 lg:px-12 overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+
+        {/* Header */}
+        <div className="text-center mb-14">
           <RevealWrapper>
             <SectionLabel text="AI Memory" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
+            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-4 leading-[1.08] tracking-tight">
               Your meetings,<br />finally searchable
             </h2>
-            <p className="text-[16px] text-ink-3 leading-relaxed mb-8">
-              Ask any question across your entire meeting history. Notemind surfaces the exact moment
-              it was discussed, with full context and cited sources.
+            <p className="text-[16px] text-ink-3 max-w-[460px] mx-auto leading-relaxed">
+              Every meeting becomes a node in your knowledge graph. Ask anything — get cited answers instantly.
             </p>
-            <ul className="space-y-3.5">
-              <CheckItem text="Natural language search across all meetings" />
-              <CheckItem text="Cited answers with meeting name + timestamp" />
-              <CheckItem text="Cross-references decisions, action items, and people" />
-            </ul>
           </RevealWrapper>
         </div>
 
-        <RevealWrapper delay={0.15}>
-          <div className="rounded-2xl overflow-hidden" style={{
-            background: 'linear-gradient(135deg, rgba(28,128,242,0.10), rgba(13,31,45,0.85))',
-            padding: '1px',
-            boxShadow: '0 32px 80px rgba(13,31,45,0.28)',
-          }}>
-            <div className="bg-navy rounded-[14px] p-5" style={{ aspectRatio: '1.1/1' }}>
-              <div className="absolute-off top-0 right-0 w-60 h-60 rounded-full opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1C80F2, transparent 70%)', position: 'absolute' }} />
+        {/* 3-col knowledge graph */}
+        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-[5fr_3fr_5fr] gap-6 lg:gap-5 items-center">
 
-              <div className="flex items-center gap-2 mb-5">
-                <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center">
-                  <Brain size={13} className="text-white" />
-                </div>
-                <span className="text-white/75 text-[13px] font-medium">AI Memory</span>
-                <span className="ml-auto text-[10px] text-brand font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />Online
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {CHAT_BUBBLES.map((b, i) => (
-                  <motion.div key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 + i * 0.3, duration: 0.4 }}
-                    className={`flex ${b.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          {/* ── Left: Meeting sources ── */}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5 mb-3 px-1">
+              Meeting Sources
+            </p>
+            <div className="space-y-2.5">
+              {SOURCES.map((src, i) => {
+                const Icon = src.icon;
+                return (
+                  <motion.div
+                    key={src.name}
+                    initial={{ opacity: 0, x: -16 }}
+                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                    transition={{ delay: i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3"
+                    style={{ boxShadow: '0 2px 8px rgba(15,26,20,0.04)' }}
                   >
-                    <div className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-[12px] leading-relaxed ${
-                      b.role === 'user' ? 'bg-white/10 text-white/75' : 'bg-brand/20 border border-brand/30 text-white/90'
-                    }`}>
-                      {b.text}
-                      {b.source && (
-                        <div className="mt-2 pt-1.5 border-t border-white/10">
-                          {/* Citation as a proper pill */}
-                          <span className="inline-flex items-center gap-1 bg-brand/15 border border-brand/25 text-white/80 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                            ↗ {b.source}
-                          </span>
-                        </div>
-                      )}
+                    <div className={`w-7 h-7 rounded-lg ${src.bg} flex items-center justify-center shrink-0`}>
+                      <Icon size={13} className="text-white" />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium text-ink truncate">{src.name}</p>
+                      <p className="text-[11px] text-ink-5">{src.meta}</p>
+                    </div>
+                    {/* Animated data pulse */}
+                    <motion.div
+                      className="w-1.5 h-1.5 rounded-full bg-brand shrink-0"
+                      animate={inView ? { opacity: [0, 1, 1, 0], x: [0, 0, 6, 14] } : {}}
+                      transition={{
+                        delay: 1.2 + i * 0.22,
+                        duration: 1.5,
+                        repeat: Infinity,
+                        repeatDelay: 3.5 + i * 0.3,
+                        ease: 'easeInOut',
+                      }}
+                    />
                   </motion.div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
-        </RevealWrapper>
+
+          {/* ── Center: Memory node ── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.82 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: 0.55, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            className="flex flex-col items-center gap-5"
+          >
+            {/* Pulsing orb */}
+            <div className="relative flex items-center justify-center w-32 h-32">
+              <motion.div
+                className="absolute inset-0 rounded-full border border-brand/20"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              />
+              <motion.div
+                className="absolute inset-[10px] rounded-full border border-brand/30"
+                animate={{ scale: [1, 1.12, 1], opacity: [0.8, 0.1, 0.8] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+              />
+              <div
+                className="relative w-[68px] h-[68px] rounded-full bg-navy flex items-center justify-center"
+                style={{
+                  boxShadow:
+                    '0 0 0 1px rgba(28,128,242,0.38), 0 0 44px rgba(28,128,242,0.28), 0 8px 32px rgba(13,31,45,0.55)',
+                }}
+              >
+                <Brain size={28} className="text-white" />
+              </div>
+            </div>
+
+            <div className="text-center">
+              <p className="text-[14px] font-semibold text-ink tracking-tight">Notemind Memory</p>
+              <p className="text-[11px] text-ink-5 mt-0.5">Unified knowledge layer</p>
+            </div>
+
+            {/* Index tags */}
+            <div className="flex flex-wrap justify-center gap-1.5 max-w-[190px]">
+              {INDEX_TAGS.map((tag, i) => (
+                <motion.span
+                  key={tag}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: 0.9 + i * 0.08 }}
+                  className="text-[10px] font-semibold text-brand bg-brand-light border border-brand/15 px-2 py-0.5 rounded-full"
+                >
+                  {tag}
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* ── Right: Chat panel ── */}
+          <motion.div
+            initial={{ opacity: 0, x: 18 }}
+            animate={inView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 0.65, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="rounded-2xl overflow-hidden bg-navy"
+            style={{
+              boxShadow:
+                '0 0 0 1px rgba(28,128,242,0.2), 0 24px 64px rgba(13,31,45,0.4)',
+            }}
+          >
+            {/* Chat header */}
+            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/[0.07]">
+              <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center shrink-0">
+                <Brain size={12} className="text-white" />
+              </div>
+              <span className="text-[13px] font-medium text-white/80">AI Memory</span>
+              <span className="ml-auto flex items-center gap-1 text-[10px] text-brand font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />Online
+              </span>
+            </div>
+
+            {/* Messages */}
+            <div className="p-4 space-y-3">
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 1.0 }}
+                className="flex justify-end"
+              >
+                <div className="bg-white/10 rounded-xl rounded-br-sm px-3.5 py-2.5 max-w-[90%]">
+                  <p className="text-[12px] text-white/80 leading-relaxed">
+                    What did my manager ask me to finish this week?
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={inView ? { opacity: 1, y: 0 } : {}}
+                transition={{ delay: 1.4 }}
+                className="flex justify-start"
+              >
+                <div className="bg-brand/20 border border-brand/25 rounded-xl rounded-bl-sm px-3.5 py-3 max-w-[96%]">
+                  <p className="text-[12px] text-white/65 mb-2.5 leading-relaxed">
+                    From your{' '}
+                    <span className="text-white font-semibold">1:1 with Manager</span> (Tue):
+                  </p>
+                  <div className="space-y-2 mb-3">
+                    {[
+                      { task: 'Complete API integration spec', due: 'Due Fri' },
+                      { task: 'Review Q3 roadmap draft',       due: 'Due Thu' },
+                      { task: 'Update mobile timeline',        due: 'Sprint Planning' },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={inView ? { opacity: 1, x: 0 } : {}}
+                        transition={{ delay: 1.6 + i * 0.15 }}
+                        className="flex items-start gap-2"
+                      >
+                        <span className="text-brand text-[11px] mt-0.5 shrink-0 font-bold">→</span>
+                        <span className="text-[12px] leading-snug">
+                          <span className="text-white/85 font-medium">{item.task}</span>
+                          <span className="text-white/40 ml-1.5 text-[11px]">{item.due}</span>
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                  <div className="pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5">
+                    {['1:1 Manager · Tue', 'Sprint Planning · Mon'].map((src) => (
+                      <span
+                        key={src}
+                        className="inline-flex items-center gap-1 bg-brand/15 border border-brand/20 text-white/60 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      >
+                        ↗ {src}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Input bar */}
+            <div className="px-4 pb-4">
+              <div className="flex items-center gap-2 bg-white/[0.06] border border-white/[0.09] rounded-xl px-3.5 py-2.5">
+                <span className="text-[13px] text-white/25 flex-1">Ask about any meeting…</span>
+                <ChevronRight size={13} className="text-brand/70 shrink-0" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
-// ── Transcript Split ──────────────────────────────────────────
+// ── Live Transcription — 4-stage process flow ─────────────────
+
+function FlowArrow({ inView, delay }: { inView: boolean; delay: number }) {
+  return (
+    <div className="hidden lg:flex items-center justify-center px-1">
+      <motion.div
+        initial={{ opacity: 0, scaleX: 0 }}
+        animate={inView ? { opacity: 1, scaleX: 1 } : {}}
+        transition={{ delay, duration: 0.3, ease: 'easeOut' }}
+        className="flex items-center origin-left"
+      >
+        <div className="w-5 h-px bg-gradient-to-r from-brand/20 to-brand/50" />
+        <ChevronRight size={13} className="text-brand/60 -ml-0.5 shrink-0" />
+      </motion.div>
+    </div>
+  );
+}
+
+function StageCard({
+  children, inView, delay, num, title,
+}: {
+  children: React.ReactNode;
+  inView: boolean;
+  delay: number;
+  num: number;
+  title: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="bg-white border border-gray-200 rounded-2xl overflow-hidden"
+      style={{ boxShadow: '0 4px 20px rgba(15,26,20,0.06)' }}
+    >
+      <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center gap-2">
+        <span className="w-5 h-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold text-[10px] shrink-0">
+          {num}
+        </span>
+        <p className="text-[11px] font-semibold text-ink uppercase tracking-[0.1em]">{title}</p>
+      </div>
+      <div className="p-5">{children}</div>
+    </motion.div>
+  );
+}
 
 function TranscriptSplit() {
-  const TRANSCRIPT_LINES = [
-    { speaker: 'Sarah', text: 'I think we should move the mobile timeline to Q1 next year.' },
-    { speaker: 'Marcus', text: 'Agreed — the API integration is the main blocker right now.' },
-    { speaker: 'You', text: 'Can we get an estimate on the API work by Friday?' },
-    { speaker: 'Marcus', text: 'Sure, I\'ll have a breakdown ready by end of week.', active: true },
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  const sd = (n: number) => n * 0.35; // stage base delay
+
+  const STREAM = [
+    { initials: 'S', col: 'bg-brand', speaker: 'Sarah',  text: 'Move the mobile timeline to Q1.', tag: 'Decision'    },
+    { initials: 'M', col: 'bg-ink',   speaker: 'Marcus', text: 'API integration is the main blocker.', tag: null      },
+    { initials: 'Y', col: 'bg-ink-3', speaker: 'You',    text: 'Estimate on the API work by Friday?', tag: 'Action'   },
+    { initials: 'M', col: 'bg-ink',   speaker: 'Marcus', text: 'Breakdown ready by end of week.',   tag: null, cur: true },
   ];
-  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-brand', Marcus: 'bg-ink', You: 'bg-ink-3' };
-  const KEYWORDS = new Set(['API', 'mobile', 'timeline', 'Friday']);
+
+  const CHECKLIST = [
+    { label: 'Detecting decisions',     done: true  },
+    { label: 'Extracting action items', done: true  },
+    { label: 'Identifying owners',      done: true  },
+    { label: 'Generating summary',      done: false },
+  ];
+
+  const OUTPUT = [
+    { label: 'Summary generated',        sub: '"Team agreed to delay mobile to Q1…"' },
+    { label: '3 action items assigned',  sub: 'Marcus · Sarah · You'                  },
+    { label: 'Saved to workspace',       sub: 'Searchable · Indexed · Shared'         },
+  ];
 
   return (
-    <section className="bg-white py-24 px-6 lg:px-12">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-        {/* Visual */}
-        <RevealWrapper delay={0.1}>
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden" style={{ boxShadow: '0 24px 60px rgba(15,26,20,0.08)' }}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-off-white">
-              <span className="text-[13px] font-semibold text-ink">Q3 Product Review</span>
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Recording
-              </span>
-            </div>
-            <div className="px-5 py-3 bg-brand-pale border-b border-brand-light">
-              <p className="text-[11px] font-medium text-brand flex items-center gap-1.5">
-                <Brain size={11} />AI: Team reviewing mobile app timeline adjustments and API blockers…
-              </p>
-            </div>
-            <div className="p-5 space-y-5">
-              {TRANSCRIPT_LINES.map((line, i) => (
-                <div key={i} className="flex gap-3.5">
-                  {/* Larger speaker avatar — 30px */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 ${SPEAKER_COLORS[line.speaker] ?? 'bg-ink-3'}`}>
-                    {line.speaker[0]}
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-ink-2 block mb-1">{line.speaker}</span>
-                    <p className="text-[13px] text-ink-3 leading-relaxed">
-                      {line.text.split(' ').map((word, wi) => {
-                        const clean = word.replace(/[.,?]/g, '');
-                        return KEYWORDS.has(clean) ? (
-                          <mark key={wi} className="bg-brand/10 text-brand rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
-                        ) : <span key={wi}>{word} </span>;
-                      })}
-                      {'active' in line && line.active && (
-                        <span className="inline-block w-0.5 h-3.5 bg-brand animate-blink ml-0.5 align-text-bottom" />
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </RevealWrapper>
+    <section className="bg-white section-divider py-24 px-4 lg:px-8 overflow-hidden">
+      <div className="max-w-7xl mx-auto">
 
-        {/* Text */}
-        <div>
+        {/* Header */}
+        <div className="text-center mb-14">
           <RevealWrapper>
             <SectionLabel text="Live Transcription" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Every word,<br /><em className="not-italic text-brand">perfectly captured</em>
+            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-4 leading-[1.08] tracking-tight">
+              Every word,{' '}
+              <em className="not-italic text-brand">perfectly captured</em>
             </h2>
-            <p className="text-[16px] text-ink-3 leading-relaxed mb-10">
-              Speaker-identified transcription in real-time. Our AI highlights key decisions and
-              action items as they happen, not after.
+            <p className="text-[16px] text-ink-3 max-w-[460px] mx-auto leading-relaxed">
+              Watch a live meeting transform into structured intelligence — in real time.
             </p>
-            {/* Stats with dividers */}
-            <div className="flex items-stretch gap-0 border border-gray-200 rounded-2xl overflow-hidden">
-              {[
-                { stat: '30+', label: 'Languages' },
-                { stat: '98.4%', label: 'Accuracy' },
-                { stat: '<500ms', label: 'Latency' },
-              ].map((s, i) => (
-                <div key={s.stat} className={`flex-1 text-center py-5 px-3 ${i < 2 ? 'border-r border-gray-200' : ''}`}>
-                  <p className="font-serif text-[30px] text-brand leading-none">{s.stat}</p>
-                  <p className="text-[12px] text-ink-4 mt-1.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
           </RevealWrapper>
         </div>
+
+        {/* 4-stage flow */}
+        <div
+          ref={ref}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-4 lg:gap-0 items-start"
+        >
+
+          {/* Stage 1 — Meeting in Progress */}
+          <StageCard inView={inView} delay={sd(0)} num={1} title="Meeting in Progress">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />REC
+                </span>
+                <span className="text-[11px] text-ink-5">Q3 Product Review</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {[
+                  { i: 'S', c: 'bg-brand', pulse: true  },
+                  { i: 'M', c: 'bg-ink',   pulse: false },
+                  { i: 'J', c: 'bg-ink-3', pulse: false },
+                  { i: 'L', c: 'bg-ink-4', pulse: false },
+                ].map(({ i, c, pulse }) => (
+                  <div key={i} className="relative shrink-0">
+                    <div className={`w-8 h-8 rounded-full ${c} flex items-center justify-center text-white text-[11px] font-bold`}>{i}</div>
+                    {pulse && <span className="absolute inset-0 rounded-full border-2 border-brand animate-ping opacity-60" />}
+                  </div>
+                ))}
+                <span className="text-[11px] text-ink-5">4 participants</span>
+              </div>
+              {/* Audio waveform */}
+              <div className="flex items-center gap-2 bg-brand-pale rounded-xl px-3 py-2.5 border border-brand-light">
+                <span className="flex gap-[3px] items-end h-4 shrink-0">
+                  {[3, 5, 4, 7, 3, 5, 4].map((h, idx) => (
+                    <motion.span
+                      key={idx}
+                      className="w-[3px] rounded-full bg-brand inline-block"
+                      animate={{ height: [`${h}px`, `${h + 4}px`, `${h}px`] }}
+                      transition={{ duration: 0.5 + idx * 0.04, delay: idx * 0.08, repeat: Infinity, ease: 'easeInOut' }}
+                      style={{ height: `${h}px` }}
+                    />
+                  ))}
+                </span>
+                <span className="text-[12px] text-brand font-medium">Sarah is speaking…</span>
+              </div>
+            </div>
+          </StageCard>
+
+          <FlowArrow inView={inView} delay={sd(0) + 0.25} />
+
+          {/* Stage 2 — Live Transcript */}
+          <StageCard inView={inView} delay={sd(1)} num={2} title="Live Transcript">
+            <div className="space-y-3">
+              {STREAM.map((line, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={inView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: sd(1) + 0.2 + i * 0.22, duration: 0.35 }}
+                  className="flex gap-2.5"
+                >
+                  <div className={`w-6 h-6 rounded-full ${line.col} flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5`}>
+                    {line.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold text-ink-5 mb-0.5">{line.speaker}</p>
+                    <p className="text-[12px] text-ink-3 leading-relaxed">
+                      {line.text}
+                      {line.cur && <span className="inline-block w-0.5 h-3 bg-brand animate-blink ml-0.5 align-text-bottom" />}
+                    </p>
+                    {line.tag && (
+                      <span className="mt-1 inline-flex text-[10px] font-semibold text-brand bg-brand-light px-2 py-0.5 rounded-full">
+                        {line.tag}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </StageCard>
+
+          <FlowArrow inView={inView} delay={sd(1) + 0.25} />
+
+          {/* Stage 3 — AI Processing */}
+          <StageCard inView={inView} delay={sd(2)} num={3} title="AI Processing">
+            <div className="space-y-3">
+              {CHECKLIST.map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={inView ? { opacity: 1, x: 0 } : {}}
+                  transition={{ delay: sd(2) + 0.2 + i * 0.28, duration: 0.35 }}
+                  className="flex items-center gap-2.5"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={inView ? { scale: 1 } : {}}
+                    transition={{ delay: sd(2) + 0.35 + i * 0.28, type: 'spring', stiffness: 320, damping: 20 }}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      item.done ? 'bg-brand' : 'border-2 border-brand/40'
+                    }`}
+                  >
+                    {item.done
+                      ? <Check size={10} className="text-white" strokeWidth={2.5} />
+                      : (
+                        <motion.span
+                          animate={{ opacity: [1, 0.2, 1] }}
+                          transition={{ duration: 0.75, repeat: Infinity }}
+                          className="w-1.5 h-1.5 rounded-full bg-brand/60"
+                        />
+                      )
+                    }
+                  </motion.div>
+                  <span className={`text-[12px] font-medium ${item.done ? 'text-ink-2' : 'text-brand'}`}>
+                    {item.label}{!item.done && '…'}
+                  </span>
+                </motion.div>
+              ))}
+              {/* Progress bar */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={inView ? { opacity: 1 } : {}}
+                transition={{ delay: sd(2) + 1.1 }}
+                className="pt-1"
+              >
+                <div className="flex justify-between text-[10px] text-ink-5 mb-1.5">
+                  <span>Processing</span><span>75%</span>
+                </div>
+                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-brand to-brand-mid rounded-full"
+                    initial={{ width: '0%' }}
+                    animate={inView ? { width: '75%' } : {}}
+                    transition={{ delay: sd(2) + 1.3, duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+              </motion.div>
+            </div>
+          </StageCard>
+
+          <FlowArrow inView={inView} delay={sd(2) + 0.25} />
+
+          {/* Stage 4 — Final Output */}
+          <StageCard inView={inView} delay={sd(3)} num={4} title="Final Output">
+            <div className="space-y-4">
+              {OUTPUT.map((item, i) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={inView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ delay: sd(3) + 0.2 + i * 0.2, duration: 0.4 }}
+                  className="flex gap-3"
+                >
+                  <div className="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 mt-0.5">
+                    <Check size={10} className="text-white" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-semibold text-ink">{item.label}</p>
+                    <p className="text-[11px] text-ink-4 mt-0.5 leading-relaxed">{item.sub}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </StageCard>
+        </div>
+
+        {/* Stats strip */}
+        <RevealWrapper delay={0.5}>
+          <div className="flex items-stretch border border-gray-200 rounded-2xl overflow-hidden mt-14 max-w-sm mx-auto">
+            {[
+              { stat: '30+',   label: 'Languages' },
+              { stat: '98.4%', label: 'Accuracy'  },
+              { stat: '<500ms',label: 'Latency'   },
+            ].map((stat, i) => (
+              <div key={stat.stat} className={`flex-1 text-center py-5 ${i < 2 ? 'border-r border-gray-200' : ''}`}>
+                <p className="font-serif text-[30px] text-brand leading-none">{stat.stat}</p>
+                <p className="text-[12px] text-ink-4 mt-1.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </RevealWrapper>
       </div>
     </section>
   );
