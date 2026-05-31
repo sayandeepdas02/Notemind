@@ -193,94 +193,6 @@ function Hero() {
 
 function LogoStrip() { return null; }
 
-// ── Dashboard Preview (mock UI) ───────────────────────────────
-
-const MOCK_MEETINGS = [
-  { title: 'Q3 Product Review', status: 'live' as const, time: 'Today · 2:00 PM', participants: 4, summary: 'Discussing Q4 roadmap and mobile app timeline adjustments...', tags: ['3 action items', 'Live transcript'] },
-  { title: 'Design Sync — Mobile', status: 'done' as const, time: 'Today · 10:00 AM', participants: 5, summary: 'Reviewed onboarding flow, aligned on new typography system...', tags: ['5 action items', 'Summary ready'] },
-  { title: 'Investor Update Call', status: 'done' as const, time: 'Yesterday · 3:30 PM', participants: 7, summary: 'Series A progress update and Q4 revenue projections...', tags: ['2 action items', 'Summary ready'] },
-  { title: 'Customer Onboarding — Acme', status: 'done' as const, time: 'Yesterday · 11:00 AM', participants: 3, summary: 'Walked through API setup and integration checklist...', tags: ['4 action items', 'Summary ready'] },
-];
-
-function MockMeetingCard({ m }: { m: typeof MOCK_MEETINGS[0] }) {
-  return (
-    <div
-      className="bg-white rounded-xl p-4"
-      style={{
-        border: '1px solid #f3f4f6',
-        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : 'var(--color-brand)'}`,
-        boxShadow: '0 2px 12px rgba(15,26,20,0.05)',
-      }}>
-      <div className="flex items-start justify-between mb-2 gap-2">
-        <p className="text-[13px] font-semibold text-ink truncate">{m.title}</p>
-        {m.status === 'live' ? (
-          <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full shrink-0 border border-red-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Live
-          </span>
-        ) : (
-          <span className="text-[10px] font-semibold text-brand bg-brand-light px-2 py-0.5 rounded-full shrink-0">Done</span>
-        )}
-      </div>
-      <p className="text-[11px] text-ink-5 mb-2">{m.time} · {m.participants} people</p>
-      <p className="text-[12px] text-ink-3 leading-relaxed line-clamp-2 mb-3">{m.summary}</p>
-      <div className="flex flex-wrap gap-1.5">
-        {m.tags.map(tag => (
-          <span key={tag} className="text-[10px] font-medium text-ink-4 bg-ink-6/50 px-2 py-0.5 rounded-full">{tag}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DashboardPreview() {
-  return (
-    <section className="bg-off-white pb-20 pt-4">
-      <div className="max-w-5xl mx-auto px-6">
-        <RevealWrapper>
-          <div className="rounded-2xl overflow-hidden border border-gray-200" style={{ boxShadow: '0 24px 80px rgba(15,26,20,0.10)' }}>
-            <div className="bg-gray-100 px-4 py-3 flex items-center gap-3 border-b border-gray-200">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-brand" />
-              </div>
-              <div className="flex-1 flex justify-center">
-                <div className="bg-white rounded-lg px-4 py-1 text-[12px] text-ink-4 border border-gray-200 flex items-center gap-1.5 max-w-[240px] w-full justify-center">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-ink-5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  app.notemind.ai/dashboard
-                </div>
-              </div>
-              <div className="w-16" />
-            </div>
-            <div className="flex bg-white min-h-[400px]">
-              <div className="w-[200px] shrink-0 bg-off-white border-r border-gray-100 p-3 flex-col gap-1 hidden sm:flex">
-                <div className="flex items-center gap-2 px-3 py-2 mb-3">
-                  <Logo size="sm" className="text-brand" />
-                  <span className="font-serif text-[14px] text-ink">Notemind</span>
-                </div>
-                {[{ label: 'All meetings', active: true }, { label: 'Upcoming', active: false }, { label: 'Action items', active: false }, { label: 'AI Memory', active: false }, { label: 'Upload', active: false }].map(item => (
-                  <div key={item.label} className={`px-3 py-2 rounded-lg text-[12px] font-medium cursor-default ${item.active ? 'bg-brand-light text-brand border-l-2 border-brand pl-[10px]' : 'text-ink-3'}`}>{item.label}</div>
-                ))}
-              </div>
-              <div className="flex-1 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-[14px] text-ink">All meetings</h3>
-                  <div className="flex gap-1">{['All', 'Live', 'Completed'].map((f, i) => (
-                    <span key={f} className={`text-[11px] px-2.5 py-1 rounded-full font-medium ${i === 0 ? 'bg-ink text-white' : 'text-ink-3 bg-gray-100'}`}>{f}</span>
-                  ))}</div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {MOCK_MEETINGS.map(m => <MockMeetingCard key={m.title} m={m} />)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </RevealWrapper>
-      </div>
-    </section>
-  );
-}
-
 // ── Features Grid ─────────────────────────────────────────────
 
 const FEATURES_DATA = [
@@ -1001,7 +913,6 @@ export default function LandingPage() {
       <Header />
       <Hero />
       <LogoStrip />
-      <DashboardPreview />
       <FeaturesGrid />
       <AIChatSplit />
       <TranscriptSplit />
