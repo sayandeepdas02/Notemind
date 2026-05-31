@@ -57,15 +57,6 @@ func (p *Provider) ExtractNativeID(meetingURL string) (string, error) {
 	return m[2], nil
 }
 
-// extractPassword parses the ?pwd= query parameter from a Zoom URL.
-func extractPassword(meetingURL string) string {
-	u, err := url.Parse(meetingURL)
-	if err != nil {
-		return ""
-	}
-	return u.Query().Get("pwd")
-}
-
 // buildVexaZoomURL constructs the Zoom URL Vexa will navigate to.
 // Vexa's Playwright bot handles Zoom browser joining at zoom.us/wc/<id>/join
 func buildVexaZoomURL(meetingURL string) string {

@@ -1,0 +1,45 @@
+version: "2"
+
+issues:
+  exclusions:
+    rules:
+      # defer X.Close() / defer tx.Rollback() — standard Go cleanup; the
+      # error is intentionally ignored because we are in a teardown path.
+      - linters: [errcheck]
+        source: "defer .+\\.Close\\(\\)"
+      - linters: [errcheck]
+        source: "defer .+\\.Rollback\\(\\)"
+      - linters: [errcheck]
+        source: "defer .+\\.Stop\\(\\)"
+
+      # Inline cleanup mirroring the defer pattern.
+      - linters: [errcheck]
+        text: "Error return value of `(.*\\.Close|.*\\.Rollback|.*\\.Stop)` is not checked"
+
+      # SSE / HTTP streaming writes — errors cannot be handled mid-stream.
+      - linters: [errcheck]
+        source: "c\\.Writer\\.Write\\("
+      - linters: [errcheck]
+        source: "fmt\\.Sscanf\\("
+      - linters: [errcheck]
+        source: "fmt\\.Fprintf\\(c\\.Writer"
+      - linters: [errcheck]
+        text: "Error return value of `(c\\.Writer\\.Write|fmt\\.Fprintf|fmt\\.Sscanf)` is not checked"
+
+      # Fire-and-forget queue/client close at shutdown.
+      - linters: [errcheck]
+        source: "c\\.client\\.Close\\("
+
+      # Heartbeat is best-effort; failure is non-fatal.
+      - linters: [errcheck]
+        source: "Heartbeat\\("
+
+      # zip writer / file write in export.
+      - linters: [errcheck]
+        source: "f\\.Write\\("
+      - linters: [errcheck]
+        source: "zw\\.Close\\("
+
+      # Best-effort background cleanup (embedding chunk purge).
+      - linters: [errcheck]
+        source: "db\\.DB\\.ExecContext\\("

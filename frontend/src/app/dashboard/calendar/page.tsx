@@ -88,14 +88,14 @@ function formatLastSynced(isoString?: string): string {
 function MeetBadge({ type }: { type: 'google_meet' | 'zoom' | null | undefined }) {
   if (type === 'google_meet') {
     return (
-      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-green-500/10 text-green-400">
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-light text-brand">
         Meet
       </span>
     );
   }
   if (type === 'zoom') {
     return (
-      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/10 text-blue-400">
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600">
         Zoom
       </span>
     );
@@ -108,18 +108,18 @@ function MeetBadge({ type }: { type: 'google_meet' | 'zoom' | null | undefined }
 function EventCard({ event }: { event: CalendarEvent }) {
   const canJoin = isWithin15Min(event.start_time);
   return (
-    <div className="p-4 bg-surface-2 border border-border rounded-xl hover:border-white/20 transition-colors flex items-start gap-4">
+    <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors flex items-start gap-4">
       <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
         <CalendarDays size={18} className="text-accent" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <h4 className="text-sm font-semibold text-foreground truncate">{event.title}</h4>
+          <h4 className="text-sm font-semibold text-ink truncate">{event.title}</h4>
           <MeetBadge type={event.meet_type} />
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{formatEventTime(event.start_time)}</p>
+        <p className="text-xs text-ink-4 mt-1">{formatEventTime(event.start_time)}</p>
         {event.attendee_count != null && event.attendee_count > 0 && (
-          <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mt-1.5 text-xs text-ink-4">
             <Users size={11} />
             {event.attendee_count} attendee{event.attendee_count !== 1 ? 's' : ''}
           </div>
@@ -130,7 +130,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
           href={event.meeting_link}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg text-xs font-semibold hover:bg-green-500/20 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand border border-green-500/20 rounded-lg text-xs font-semibold hover:bg-green-500/20 transition-colors shrink-0"
         >
           <Video size={12} />
           Join now
@@ -144,7 +144,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
 
 function EventSkeleton() {
   return (
-    <div className="p-4 bg-surface-2 border border-border rounded-xl flex items-center gap-4">
+    <div className="p-4 bg-white border border-gray-200 rounded-xl flex items-center gap-4">
       <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-3/4" />
@@ -218,11 +218,11 @@ export default function CalendarPage() {
     return (
       <div className="p-5 lg:p-8 max-w-2xl mx-auto">
         <Panel padding="lg" className="text-center">
-          <div className="w-16 h-16 rounded-2xl bg-surface-3 border border-border flex items-center justify-center mx-auto mb-5">
-            <CalendarDays size={28} className="text-muted-foreground" />
+          <div className="w-16 h-16 rounded-2xl bg-surface-3 border border-gray-200 flex items-center justify-center mx-auto mb-5">
+            <CalendarDays size={28} className="text-ink-4" />
           </div>
-          <h2 className="text-xl font-bold text-foreground mb-2">Your calendar isn&apos;t connected</h2>
-          <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+          <h2 className="text-xl font-bold text-ink mb-2">Your calendar isn&apos;t connected</h2>
+          <p className="text-sm text-ink-4 mb-6 max-w-sm mx-auto">
             Connect your Google Calendar so Notemind can automatically join your scheduled meetings.
           </p>
           <ul className="text-left space-y-2 mb-8 max-w-xs mx-auto">
@@ -231,8 +231,8 @@ export default function CalendarPage() {
               'Get summaries delivered after every call',
               'Never miss action items from your meetings',
             ].map(b => (
-              <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#6366f1] shrink-0" />
+              <li key={b} className="flex items-start gap-2 text-sm text-ink-4">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand shrink-0" />
                 {b}
               </li>
             ))}
@@ -240,7 +240,7 @@ export default function CalendarPage() {
           {error && <p className="text-sm text-red-400 mb-4">{error}</p>}
           <button
             onClick={() => { window.location.href = `${API_BASE}/auth/google-calendar`; }}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl font-semibold transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand hover:bg-brand-mid text-white rounded-xl font-semibold transition-colors"
           >
             <CalendarDays size={18} />
             Connect Google Calendar
@@ -268,23 +268,23 @@ export default function CalendarPage() {
       <div className="p-5 lg:p-8 max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Upcoming meetings</h1>
+            <h1 className="text-xl font-bold text-ink">Upcoming meetings</h1>
             {status?.last_synced && (
-              <p className="text-xs text-muted-foreground mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
+              <p className="text-xs text-ink-4 mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
             )}
           </div>
           <button
             onClick={handleSync}
             disabled={syncing}
-            className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-border text-foreground rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-gray-200 text-ink rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
           >
             <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
             Sync now
           </button>
         </div>
         <Panel padding="lg" className="text-center">
-          <CalendarDays size={28} className="text-muted-foreground mx-auto mb-3 opacity-40" />
-          <p className="text-sm text-muted-foreground">No upcoming meetings with video links in the next 7 days</p>
+          <CalendarDays size={28} className="text-ink-4 mx-auto mb-3 opacity-40" />
+          <p className="text-sm text-ink-4">No upcoming meetings with video links in the next 7 days</p>
         </Panel>
       </div>
     );
@@ -295,15 +295,15 @@ export default function CalendarPage() {
     <div className="p-5 lg:p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Upcoming meetings</h1>
+          <h1 className="text-xl font-bold text-ink">Upcoming meetings</h1>
           {status?.last_synced && (
-            <p className="text-xs text-muted-foreground mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
+            <p className="text-xs text-ink-4 mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
           )}
         </div>
         <button
           onClick={handleSync}
           disabled={syncing}
-          className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-border text-foreground rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-gray-200 text-ink rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
         >
           <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
           Sync now
@@ -316,7 +316,7 @@ export default function CalendarPage() {
           if (!items || items.length === 0) return null;
           return (
             <div key={group}>
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h2 className="text-xs font-semibold text-ink-4 uppercase tracking-wider mb-3">
                 {groupLabels[group]}
               </h2>
               <div className="space-y-3">

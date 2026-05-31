@@ -158,9 +158,9 @@ func buildChunk(id int, lines []cleanedLine) TranscriptChunk {
 	var sb strings.Builder
 	for _, l := range lines {
 		if l.timestamp != "" {
-			sb.WriteString(fmt.Sprintf("[%s] %s: %s\n", l.timestamp, l.speaker, l.text))
+			fmt.Fprintf(&sb, "[%s] %s: %s\n", l.timestamp, l.speaker, l.text)
 		} else {
-			sb.WriteString(fmt.Sprintf("%s: %s\n", l.speaker, l.text))
+			fmt.Fprintf(&sb, "%s: %s\n", l.speaker, l.text)
 		}
 		spkSet[l.speaker] = true
 	}

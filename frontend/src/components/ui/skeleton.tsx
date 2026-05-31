@@ -1,28 +1,16 @@
-// Skeleton shimmer component — used for all loading states
-// Eliminates layout shift and signals intelligence to the user
-
 import { cn } from '@/lib/utils';
 
-interface SkeletonProps {
-  className?: string;
-}
+interface SkeletonProps { className?: string; }
 
 export function Skeleton({ className }: SkeletonProps) {
   return (
-    <div
-      className={cn(
-        'animate-pulse rounded-md bg-white/5',
-        className
-      )}
-    />
+    <div className={cn('animate-pulse rounded-md bg-gray-100', className)} />
   );
 }
 
-// Preset skeleton shapes for common layouts
-
 export function MeetingCardSkeleton() {
   return (
-    <div className="bg-surface-2 border border-border rounded-xl p-5 space-y-4">
+    <div className="bg-white border border-gray-100 rounded-xl p-5 space-y-4">
       <div className="flex justify-between items-center">
         <Skeleton className="h-5 w-20 rounded-full" />
         <Skeleton className="h-5 w-24 rounded-md" />
@@ -51,7 +39,7 @@ export function TranscriptSegmentSkeleton() {
 
 export function SearchResultSkeleton() {
   return (
-    <div className="bg-surface-2 border border-border rounded-xl p-4 space-y-3">
+    <div className="bg-white border border-gray-100 rounded-xl p-4 space-y-3">
       <Skeleton className="h-5 w-1/2" />
       <Skeleton className="h-3 w-5/6" />
       <Skeleton className="h-3 w-1/4" />

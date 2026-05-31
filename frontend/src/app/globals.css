@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* ── Brand & semantic tokens ─────────────────────────────────── */
+/* ── Editorial & brand tokens ─────────────────────────────────── */
 
 @theme inline {
   /* Semantic tokens → Tailwind utilities */
@@ -25,12 +25,10 @@
   --color-input:               var(--input);
   --color-ring:                var(--ring);
 
-  /* Surface aliases */
   --color-surface:   var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
 
-  /* Sidebar */
   --color-sidebar:                    var(--sidebar);
   --color-sidebar-foreground:         var(--sidebar-foreground);
   --color-sidebar-primary:            var(--sidebar-primary);
@@ -40,18 +38,21 @@
   --color-sidebar-border:             var(--sidebar-border);
   --color-sidebar-ring:               var(--sidebar-ring);
 
-  /* Brand green palette */
-  --color-brand-50:  #f0fdf4;
-  --color-brand-100: #dcfce7;
-  --color-brand-200: #bbf7d0;
-  --color-brand-300: #86efac;
-  --color-brand-400: #4ade80;
-  --color-brand-500: #22c55e;
-  --color-brand-600: #16a34a;
-  --color-brand-700: #15803d;
-  --color-brand-800: #166534;
-  --color-brand-900: #14532d;
-  --color-brand-950: #052e16;
+  /* ── Editorial palette (Kernel/Linear aesthetic) ── */
+  --color-ink:       #0f1a14;
+  --color-ink-2:     #2d3a32;
+  --color-ink-3:     #4a5c51;
+  --color-ink-4:     #7a8c80;
+  --color-ink-5:     #b8c8be;
+  --color-ink-6:     #deeae2;
+  --color-navy:      #0d1f2d;
+  --color-off-white: #f8faf9;
+
+  /* Brand green */
+  --color-brand:     #1a6b3c;
+  --color-brand-mid: #22883f;
+  --color-brand-light: #e8f5ed;
+  --color-brand-pale:  #f2faf5;
 
   /* Radii */
   --radius-sm:  calc(var(--radius) * 0.6);
@@ -63,57 +64,53 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   /* Fonts */
-  --font-heading: var(--font-sans);
-  --font-sans:    var(--font-sans);
+  --font-serif: var(--font-serif-var), "Georgia", serif;
+  --font-sans:  var(--font-sans-var), system-ui, -apple-system, sans-serif;
 }
 
-/* ── CSS custom properties (LIGHT THEME) ─────────────────────── */
+/* ── CSS Custom Properties (LIGHT) ───────────────────────────── */
 
 :root {
-  /* Surfaces */
   --surface:   #ffffff;
   --surface-2: #f9fafb;
   --surface-3: #f3f4f6;
 
-  /* Accent helpers */
   --accent-hover: #15803d;
-  --accent-muted: rgba(22, 163, 74, 0.1);
-  --border-focus: #16a34a;
+  --accent-muted: rgba(26, 107, 60, 0.1);
+  --border-focus: #1a6b3c;
 
-  /* Shadcn / Tailwind tokens */
   --background:          #ffffff;
-  --foreground:          #111827;
+  --foreground:          #0f1a14;
   --card:                #ffffff;
-  --card-foreground:     #111827;
+  --card-foreground:     #0f1a14;
   --popover:             #ffffff;
-  --popover-foreground:  #111827;
-  --primary:             #16a34a;
+  --popover-foreground:  #0f1a14;
+  --primary:             #1a6b3c;
   --primary-foreground:  #ffffff;
   --secondary:           #f9fafb;
-  --secondary-foreground: #111827;
+  --secondary-foreground: #0f1a14;
   --muted:               #f9fafb;
   --muted-foreground:    #6b7280;
-  --accent:              #16a34a;
+  --accent:              #1a6b3c;
   --accent-foreground:   #ffffff;
-  --destructive:         #ef4444;
+  --destructive:         #dc2626;
   --border:              #e5e7eb;
   --input:               #e5e7eb;
-  --ring:                #16a34a;
+  --ring:                #1a6b3c;
   --radius:              0.625rem;
 
-  /* Sidebar */
   --sidebar:                    #ffffff;
-  --sidebar-foreground:         #111827;
-  --sidebar-primary:            #16a34a;
+  --sidebar-foreground:         #0f1a14;
+  --sidebar-primary:            #1a6b3c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent:             #f0fdf4;
-  --sidebar-accent-foreground:  #15803d;
+  --sidebar-accent:             #f2faf5;
+  --sidebar-accent-foreground:  #1a6b3c;
   --sidebar-border:             #f3f4f6;
-  --sidebar-ring:               #16a34a;
+  --sidebar-ring:               #1a6b3c;
 
-  /* Shadow tokens */
   --shadow-card:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-card-lg: 0 24px 80px rgba(15,26,20,0.08);
 }
 
 /* ── Base ────────────────────────────────────────────────────── */
@@ -125,7 +122,6 @@ html, body {
   padding: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -133,10 +129,10 @@ html, body {
 
 /* ── Scrollbar ───────────────────────────────────────────────── */
 
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
 /* ── Animations ──────────────────────────────────────────────── */
 
@@ -147,10 +143,22 @@ html, body {
 .animate-marquee { animation: marquee 30s linear infinite; }
 
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
-  70%  { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(26, 107, 60, 0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(26, 107, 60, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(26, 107, 60, 0); }
 }
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.animate-blink { animation: blink-cursor 1s step-end infinite; }
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-float-up { animation: float-up 0.5s ease forwards; }
 
 /* ── Tailwind base layer ─────────────────────────────────────── */
 
@@ -164,4 +172,32 @@ html, body {
   html {
     @apply font-sans;
   }
+}
+
+/* ── Typography utilities ────────────────────────────────────── */
+
+.font-serif { font-family: var(--font-serif); }
+
+/* ── Hero glow (landing page) ────────────────────────────────── */
+
+.hero-glow {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(26,107,60,0.35), transparent 70%);
+}
+
+.hero-fade-bottom {
+  background: linear-gradient(to bottom, transparent 60%, #f8faf9 100%);
+}
+
+/* ── Glass card ──────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ── Section separator ───────────────────────────────────────── */
+
+.section-divider {
+  border-top: 1px solid rgba(26,107,60,0.12);
 }

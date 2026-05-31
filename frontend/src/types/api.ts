@@ -67,6 +67,7 @@ export interface Meeting {
   provider: MeetingProvider;
   meeting_url?: string;
   meeting_type?: MeetingType;
+  summary?: string;
   created_at: string;
   updated_at?: string;
   duration_seconds?: number;

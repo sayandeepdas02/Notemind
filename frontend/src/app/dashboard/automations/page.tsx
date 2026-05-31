@@ -40,7 +40,7 @@ interface Rule {
 
 const TRIGGER_LABELS: Record<TriggerEvent, { label: string; color: string }> = {
   when_meeting_scheduled: { label: 'Meeting scheduled', color: 'bg-blue-500/10 text-blue-400' },
-  when_meeting_starts:    { label: 'Meeting starts',    color: 'bg-orange-500/10 text-orange-400' },
+  when_meeting_starts:    { label: 'Meeting starts',    color: 'bg-orange-50 text-orange-600' },
   when_meeting_ends:      { label: 'Meeting ends',      color: 'bg-green-500/10 text-green-400' },
 };
 
@@ -97,7 +97,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       onClick={() => onChange(!checked)}
       className={cn(
         'relative inline-flex h-5 w-9 rounded-full transition-colors focus:outline-none disabled:opacity-50',
-        checked ? 'bg-[#6366f1]' : 'bg-border'
+        checked ? 'bg-brand' : 'bg-border'
       )}
     >
       <span className={cn(
@@ -157,7 +157,7 @@ function RuleCard({
           {confirmDelete ? (
             <div className="flex items-center gap-1">
               <button onClick={() => onDelete(rule.id)}
-                className="px-2 py-1 text-xs font-medium text-red-400 hover:text-red-300 transition-colors">
+                className="px-2 py-1 text-xs font-medium text-red-600 hover:text-red-300 transition-colors">
                 Confirm
               </button>
               <button onClick={() => setConfirmDelete(false)}
@@ -168,7 +168,7 @@ function RuleCard({
           ) : (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="p-1.5 text-muted-foreground hover:text-red-400 rounded-lg transition-colors"
+              className="p-1.5 text-muted-foreground hover:text-red-600 rounded-lg transition-colors"
             >
               <Trash2 size={14} />
             </button>
@@ -292,7 +292,7 @@ function RuleBuilder({
                   className={cn(
                     'w-full text-left px-4 py-3 rounded-xl border transition-all',
                     form.trigger === t.value
-                      ? 'border-[#6366f1] bg-[#6366f1]/10'
+                      ? 'border-brand bg-brand/10'
                       : 'border-border bg-surface-3 hover:border-border/60'
                   )}
                 >
@@ -312,7 +312,7 @@ function RuleBuilder({
               <button
                 type="button"
                 onClick={addCondition}
-                className="flex items-center gap-1 text-xs text-[#6366f1] hover:text-[#818cf8] transition-colors"
+                className="flex items-center gap-1 text-xs text-brand hover:text-brand-mid transition-colors"
               >
                 <Plus size={12} /> Add condition
               </button>
@@ -326,7 +326,7 @@ function RuleBuilder({
                   <select
                     value={c.field}
                     onChange={e => updateCondition(i, { field: e.target.value })}
-                    className="flex-1 bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]"
+                    className="flex-1 bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand"
                   >
                     {Object.entries(FIELD_LABELS).map(([v, l]) => (
                       <option key={v} value={v}>{l}</option>
@@ -335,7 +335,7 @@ function RuleBuilder({
                   <select
                     value={c.op}
                     onChange={e => updateCondition(i, { op: e.target.value as ConditionOp })}
-                    className="flex-1 bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]"
+                    className="flex-1 bg-background border border-border text-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand"
                   >
                     {Object.entries(OP_LABELS).map(([v, l]) => (
                       <option key={v} value={v}>{l}</option>
@@ -346,12 +346,12 @@ function RuleBuilder({
                     value={c.value}
                     onChange={e => updateCondition(i, { value: e.target.value })}
                     placeholder="value"
-                    className="flex-1 bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]"
+                    className="flex-1 bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand"
                   />
                   <button
                     type="button"
                     onClick={() => removeCondition(i)}
-                    className="text-muted-foreground hover:text-red-400 transition-colors shrink-0"
+                    className="text-muted-foreground hover:text-red-600 transition-colors shrink-0"
                   >
                     <X size={14} />
                   </button>
@@ -372,7 +372,7 @@ function RuleBuilder({
                 return (
                   <div key={type} className={cn(
                     'rounded-xl border transition-all',
-                    active ? 'border-[#6366f1]/40 bg-[#6366f1]/5' : 'border-border'
+                    active ? 'border-brand/40 bg-brand/5' : 'border-border'
                   )}>
                     <button
                       type="button"
@@ -381,7 +381,7 @@ function RuleBuilder({
                     >
                       <div className={cn(
                         'w-4 h-4 rounded flex items-center justify-center border-2 shrink-0 transition-colors',
-                        active ? 'bg-[#6366f1] border-[#6366f1]' : 'border-border'
+                        active ? 'bg-brand border-brand' : 'border-border'
                       )}>
                         {active && <Check size={10} className="text-white" />}
                       </div>
@@ -395,7 +395,7 @@ function RuleBuilder({
                           value={action?.params?.tag ?? ''}
                           onChange={e => updateActionParam(type, 'tag', e.target.value)}
                           placeholder="Tag name, e.g. standup"
-                          className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]"
+                          className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand"
                         />
                       </div>
                     )}
@@ -407,7 +407,7 @@ function RuleBuilder({
                           value={action?.params?.email ?? ''}
                           onChange={e => updateActionParam(type, 'email', e.target.value)}
                           placeholder="email@example.com"
-                          className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-[#6366f1]"
+                          className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-brand"
                         />
                       </div>
                     )}
@@ -427,12 +427,12 @@ function RuleBuilder({
               value={form.name ?? ''}
               onChange={e => updateField('name', e.target.value)}
               placeholder="e.g. Auto-join standups"
-              className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/20 transition-all"
+              className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/10 transition-all"
             />
           </div>
 
           {err && (
-            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertCircle size={14} /> {err}
             </div>
           )}
@@ -441,7 +441,7 @@ function RuleBuilder({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-[#6366f1] hover:bg-[#818cf8] text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-brand hover:bg-brand-mid text-white font-bold rounded-xl transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {saving ? 'Saving…' : initial ? 'Save changes' : 'Create rule'}
@@ -516,7 +516,7 @@ export default function AutomationsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Zap size={20} className="text-[#6366f1]" />
+            <Zap size={20} className="text-brand" />
             Automations
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -525,7 +525,7 @@ export default function AutomationsPage() {
         </div>
         <button
           onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl text-sm font-semibold transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-mid text-white rounded-xl text-sm font-semibold transition-colors"
         >
           <Plus size={16} /> New rule
         </button>
@@ -533,7 +533,7 @@ export default function AutomationsPage() {
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-sm text-red-400">
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">
           <AlertCircle size={16} /> {error}
         </div>
       )}
@@ -564,7 +564,7 @@ export default function AutomationsPage() {
       {!loading && !error && rules.length === 0 && (
         <Panel padding="lg" className="text-center py-16">
           <div className="w-14 h-14 rounded-2xl bg-surface-3 border border-border flex items-center justify-center mx-auto mb-5">
-            <Zap size={24} className="text-[#6366f1] opacity-60" />
+            <Zap size={24} className="text-brand opacity-60" />
           </div>
           <h3 className="text-base font-semibold text-foreground mb-2">Automate your meetings</h3>
           <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-7">
@@ -572,7 +572,7 @@ export default function AutomationsPage() {
           </p>
           <button
             onClick={openNew}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-mid text-white rounded-xl font-semibold text-sm transition-colors"
           >
             <Plus size={16} /> Create your first rule
           </button>
