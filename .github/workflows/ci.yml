@@ -10,6 +10,14 @@ jobs:
   backend-lint-test:
     name: Backend (Go) — Lint & Test
     runs-on: ubuntu-latest
+    env:
+      # Prevent Go's automatic toolchain switching (Go 1.21+).
+      # Without this, Go resolves the effective toolchain from the build
+      # graph and reports go1.25.0 (required by a transitive dep), which
+      # causes golangci-lint (built with go1.24) to refuse with:
+      # "go language version (go1.24) < targeted Go version (1.25.0)".
+      # GOTOOLCHAIN=local pins execution to the installed go1.24.x binary.
+      GOTOOLCHAIN: local
     services:
       postgres:
         image: pgvector/pgvector:pg15
