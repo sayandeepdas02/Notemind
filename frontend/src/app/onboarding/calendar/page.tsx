@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import { CalendarDays, ArrowRight, CheckCircle } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -14,23 +14,23 @@ export default function CalendarOnboarding() {
     <div className="relative z-10">
       {/* Step indicator */}
       <div className="flex items-center gap-2 mb-6">
-        <span className="text-xs font-medium text-[#8b8b9f]">Step 2 of 2</span>
+        <span className="text-[11px] font-medium text-ink-4">Step 2 of 2</span>
         <div className="flex gap-1.5">
-          <div className="w-6 h-1.5 rounded-full bg-[#6366f1]/40" />
-          <div className="w-6 h-1.5 rounded-full bg-[#6366f1]" />
+          <div className="w-6 h-1.5 rounded-full bg-brand/40" />
+          <div className="w-6 h-1.5 rounded-full bg-brand" />
         </div>
       </div>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#f8f8fa] mb-2">Connect your calendar</h1>
-        <p className="text-[#8b8b9f]">
+      <div className="mb-7">
+        <h1 className="font-serif text-[30px] text-ink mb-2 tracking-tight">Connect your calendar</h1>
+        <p className="text-[14px] text-ink-4">
           Notemind can automatically join your scheduled meetings.
         </p>
       </div>
 
-      {/* Calendar illustration */}
-      <div className="w-16 h-16 rounded-2xl bg-[#6366f1]/10 border border-[#6366f1]/20 flex items-center justify-center mb-8">
-        <CalendarDays size={32} className="text-[#6366f1]" />
+      {/* Calendar icon */}
+      <div className="w-16 h-16 rounded-2xl bg-brand-light border border-brand/20 flex items-center justify-center mb-8">
+        <CalendarDays size={30} className="text-brand" />
       </div>
 
       {/* Benefits */}
@@ -40,8 +40,8 @@ export default function CalendarOnboarding() {
           "Get notified 5 minutes before each meeting",
           "Summaries delivered straight to your inbox",
         ].map((benefit) => (
-          <li key={benefit} className="flex items-center gap-3 text-sm text-[#8b8b9f]">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#6366f1] shrink-0" />
+          <li key={benefit} className="flex items-center gap-3 text-[14px] text-ink-3">
+            <CheckCircle size={16} className="text-brand shrink-0" />
             {benefit}
           </li>
         ))}
@@ -50,7 +50,7 @@ export default function CalendarOnboarding() {
       {/* Connect button */}
       <button
         onClick={handleConnect}
-        className="w-full flex items-center justify-center gap-2 bg-[#6366f1] hover:bg-[#818cf8] text-white font-bold py-3 px-4 rounded-xl transition-colors"
+        className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-mid text-white font-semibold py-3.5 px-4 rounded-xl transition-colors text-[15px]"
       >
         <CalendarDays size={18} />
         Connect Google Calendar
@@ -60,9 +60,9 @@ export default function CalendarOnboarding() {
       <div className="text-center mt-5">
         <Link
           href="/dashboard"
-          className="text-sm text-[#8b8b9f] hover:text-[#f8f8fa] transition-colors inline-flex items-center gap-1"
+          className="text-[13px] text-ink-5 hover:text-ink-3 transition-colors inline-flex items-center gap-1.5"
         >
-          Skip for now <ArrowRight size={14} />
+          Skip for now <ArrowRight size={13} />
         </Link>
       </div>
     </div>

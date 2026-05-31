@@ -47,15 +47,11 @@ function relativeDate(isoString: string): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
-
   if (diffMin < 1) return 'Just now';
   if (diffMin < 60) return `${diffMin}m ago`;
-
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterdayStart = new Date(todayStart.getTime() - 86400000);
-
-  if (date >= todayStart)
-    return `Today ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  if (date >= todayStart) return `Today ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
   if (date >= yesterdayStart) return 'Yesterday';
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -63,9 +59,9 @@ function relativeDate(isoString: string): string {
 // ── Provider badge ────────────────────────────────────────────
 
 const PROVIDER_STYLES: Record<MeetingProvider, { label: string; className: string }> = {
-  google_meet: { label: 'Google Meet', className: 'bg-green-50 text-green-700 border-green-200' },
-  zoom:        { label: 'Zoom',        className: 'bg-blue-50 text-blue-700 border-blue-200'   },
-  upload:      { label: 'Uploaded',    className: 'bg-gray-100 text-gray-500 border-gray-200'  },
+  google_meet: { label: 'Google Meet', className: 'bg-brand-light text-brand border-brand/20' },
+  zoom:        { label: 'Zoom',        className: 'bg-blue-50 text-blue-700 border-blue-200'  },
+  upload:      { label: 'Uploaded',    className: 'bg-gray-100 text-gray-500 border-gray-200' },
 };
 
 function ProviderBadge({ provider }: { provider: MeetingProvider }) {
@@ -95,6 +91,7 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
   const title = parseMeetTitle(meeting);
   const duration = formatDuration(meeting.duration_seconds, meeting.status);
   const isCompleted = ['completed', 'ended'].includes(meeting.status);
+  const hasSummary = isCompleted && (meeting as any).summary;
 
   return (
     <motion.div
@@ -104,20 +101,17 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
     >
       <Link href={`/dashboard/meetings/${meeting.id}`} className="group block">
         <div className="bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 hover:shadow-sm hover:-translate-y-px transition-all duration-200">
-          {/* Top row */}
           <div className="flex items-center justify-between mb-3 gap-2">
             <ProviderBadge provider={meeting.provider} />
             <StatusBadge status={meeting.status} />
           </div>
 
-          {/* Title */}
-          <h4 className="text-[15px] font-medium text-gray-900 mb-2 truncate group-hover:text-green-700 transition-colors flex items-center gap-1.5">
+          <h4 className="text-[15px] font-medium text-ink mb-2 truncate group-hover:text-brand transition-colors flex items-center gap-1.5">
             {title}
-            <ArrowRight size={13} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0 text-green-600" />
+            <ArrowRight size={13} className="opacity-0 group-hover:opacity-50 transition-opacity shrink-0 text-brand" />
           </h4>
 
-          {/* Meta */}
-          <div className="flex items-center gap-4 text-xs text-gray-400 mb-3">
+          <div className="flex items-center gap-4 text-[12px] text-ink-5 mb-3">
             <span className="flex items-center gap-1">
               <Clock size={11} />
               {relativeDate(meeting.created_at)}
@@ -130,19 +124,20 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
             )}
           </div>
 
-          {/* AI summary preview (completed only) */}
-          {isCompleted && (
-            <div className="bg-gray-50 rounded-lg px-3 py-2 mt-2">
-              <p className="text-sm text-gray-400 italic line-clamp-2 leading-relaxed">
-                AI summary will appear here once processing is complete...
+          {/* Only show summary preview if summary actually exists */}
+          {hasSummary && (
+            <div className="bg-brand-pale rounded-lg px-3 py-2 mt-2 border border-brand-light">
+              <p className="text-[13px] text-ink-3 line-clamp-2 leading-relaxed">
+                {(meeting as any).summary}
               </p>
             </div>
           )}
 
-          {/* Footer */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-            <p className="text-[11px] text-gray-400 font-mono">{meeting.id.slice(0, 8)}…</p>
-            <span className="text-xs text-green-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+            <p className="text-[11px] text-ink-5 uppercase tracking-wider">
+              {meeting.meeting_type || 'General'}
+            </p>
+            <span className="text-[12px] text-brand font-medium opacity-0 group-hover:opacity-100 transition-opacity">
               View →
             </span>
           </div>
@@ -155,11 +150,11 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
 // ── Join Form ─────────────────────────────────────────────────
 
 const MEETING_TYPES = [
-  { value: 'general',   label: 'General' },
-  { value: 'standup',   label: 'Standup' },
+  { value: 'general', label: 'General' },
+  { value: 'standup', label: 'Standup' },
   { value: 'interview', label: 'Interview' },
-  { value: 'sales',     label: 'Sales' },
-  { value: 'planning',  label: 'Planning' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'planning', label: 'Planning' },
 ];
 
 function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
@@ -172,19 +167,14 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) return;
-
     if (!url.startsWith('https://meet.google.com/') && !url.startsWith('https://zoom.us/')) {
       setError('Please enter a valid Google Meet or Zoom URL');
       return;
     }
-
     setStarting(true);
     setError(null);
     try {
-      const data = await api.post<MeetingJoinResponse>('/meetings/join', {
-        meeting_url: url,
-        meeting_type: meetingType,
-      });
+      const data = await api.post<MeetingJoinResponse>('/meetings/join', { meeting_url: url, meeting_type: meetingType });
       onJoined(data.meeting_id);
     } catch (err) {
       setError(err instanceof APIError ? err.message : 'Failed to start meeting bot.');
@@ -196,9 +186,9 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
     return (
       <button
         onClick={() => setShowForm(true)}
-        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        className="flex items-center gap-2 bg-brand hover:bg-brand-mid text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors"
       >
-        <Play size={14} fill="currentColor" />
+        <Play size={13} fill="currentColor" />
         Join a meeting
       </button>
     );
@@ -207,8 +197,14 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">Join a meeting</h3>
-        <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+        <h3 className="text-[13px] font-semibold text-ink">Join a meeting</h3>
+        <button
+          aria-label="Close join form"
+          onClick={() => setShowForm(false)}
+          className="text-ink-4 hover:text-ink-2 transition-colors text-lg leading-none"
+        >
+          &times;
+        </button>
       </div>
 
       <form onSubmit={handleStart} className="space-y-3">
@@ -217,14 +213,13 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
           value={url}
           onChange={e => { setUrl(e.target.value); setError(null); }}
           placeholder="Paste Google Meet or Zoom link..."
-          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400
-                     focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-all"
+          className="w-full border border-gray-200 rounded-lg px-4 py-3 text-[14px] text-ink placeholder:text-ink-5
+                     focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10 transition-all"
           required
           disabled={starting}
           autoFocus
         />
 
-        {/* Meeting type */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {MEETING_TYPES.map(t => (
             <button
@@ -233,10 +228,10 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
               disabled={starting}
               onClick={() => setMeetingType(t.value)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
+                'px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors border',
                 meetingType === t.value
-                  ? 'bg-green-600 text-white border-green-600'
-                  : 'bg-gray-50 text-gray-500 border-gray-200 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'bg-brand text-white border-brand'
+                  : 'bg-gray-50 text-ink-3 border-gray-200 hover:text-ink hover:bg-gray-100'
               )}
             >
               {t.label}
@@ -245,17 +240,17 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
         </div>
 
         {error && (
-          <p className="text-sm text-red-500 flex items-center gap-1.5">
-            <AlertCircle size={14} /> {error}
+          <p className="text-[13px] text-red-600 flex items-center gap-1.5">
+            <AlertCircle size={13} /> {error}
           </p>
         )}
 
         <button
           type="submit"
           disabled={starting || !url.trim()}
-          className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm py-2.5 transition-colors disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-mid text-white rounded-lg font-medium text-[14px] py-2.5 transition-colors disabled:opacity-50"
         >
-          {starting ? <Loader2 size={15} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
+          {starting ? <Loader2 size={14} className="animate-spin" /> : <Play size={13} fill="currentColor" />}
           {starting ? 'Joining...' : 'Join now →'}
         </button>
       </form>
@@ -277,7 +272,6 @@ export default function DashboardHome() {
     setMeetingsError(null);
     try {
       const data = await api.get<Meeting[]>('/meetings');
-      // Sort by newest first
       const sorted = (data ?? []).sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
@@ -291,11 +285,10 @@ export default function DashboardHome() {
 
   useEffect(() => { fetchMeetings(); }, [fetchMeetings]);
 
-  const handleJoined = (id: string) => {
-    router.push(`/dashboard/meetings/${id}`);
-  };
+  const handleJoined = (id: string) => router.push(`/dashboard/meetings/${id}`);
 
   const filtered = filterMeetings(meetings, filter);
+  const liveCount = meetings.filter(m => ['recording','admitted','joining'].includes(m.status)).length;
 
   const FILTER_TABS: { id: FilterMode; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -306,14 +299,11 @@ export default function DashboardHome() {
 
   return (
     <div className="p-5 lg:p-8 max-w-6xl mx-auto">
-
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Meetings</h1>
+        <h1 className="text-[20px] font-semibold text-ink">Meetings</h1>
         <JoinForm onJoined={handleJoined} />
       </div>
-
-      {/* Join form (expanded state managed inside component above) */}
 
       {/* Quick stats */}
       {!loadingMeetings && meetings.length > 0 && (
@@ -321,12 +311,12 @@ export default function DashboardHome() {
           {[
             { label: 'Total', value: meetings.length },
             { label: 'Completed', value: meetings.filter(m => ['completed','ended'].includes(m.status)).length },
-            { label: 'Live now', value: meetings.filter(m => ['recording','admitted','joining'].includes(m.status)).length },
+            { label: 'Live now', value: liveCount },
             { label: 'This week', value: meetings.filter(m => Date.now() - new Date(m.created_at).getTime() < 7 * 86400000).length },
           ].map(stat => (
             <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-4">
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{stat.label}</p>
+              <p className="text-[24px] font-semibold text-ink">{stat.value}</p>
+              <p className="text-[12px] text-ink-5 mt-0.5">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -335,35 +325,38 @@ export default function DashboardHome() {
       {/* Meeting list */}
       <section id="meetings">
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400">Recent meetings</h2>
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-5">Recent meetings</h2>
 
           <div className="flex items-center gap-2">
-            {/* Filter tabs */}
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
               {FILTER_TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setFilter(tab.id)}
                   className={cn(
-                    'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                    'px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors flex items-center gap-1.5',
                     filter === tab.id
-                      ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-white text-ink shadow-sm border border-gray-200'
+                      : 'text-ink-4 hover:text-ink-2'
                   )}
                 >
                   {tab.label}
+                  {tab.id === 'live' && liveCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                      {liveCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
 
-            {/* Refresh */}
             <button
               onClick={fetchMeetings}
               disabled={loadingMeetings}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-              title="Refresh"
+              aria-label="Refresh meetings"
+              className="p-2 text-ink-4 hover:text-ink-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
-              <RefreshCw size={14} className={loadingMeetings ? 'animate-spin' : ''} />
+              <RefreshCw size={13} className={loadingMeetings ? 'animate-spin' : ''} />
             </button>
           </div>
         </div>
@@ -377,12 +370,12 @@ export default function DashboardHome() {
 
         {/* Error */}
         {meetingsError && (
-          <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
-            <div className="flex items-center gap-3 text-sm">
-              <AlertCircle size={18} />
+          <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+            <div className="flex items-center gap-3 text-[13px]">
+              <AlertCircle size={16} />
               <span>{meetingsError}</span>
             </div>
-            <button onClick={fetchMeetings} className="text-xs font-semibold underline underline-offset-2 shrink-0">
+            <button onClick={fetchMeetings} className="text-[12px] font-semibold underline underline-offset-2 shrink-0">
               Retry
             </button>
           </div>
@@ -391,22 +384,27 @@ export default function DashboardHome() {
         {/* Empty state */}
         {!loadingMeetings && !meetingsError && meetings.length === 0 && (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl p-16 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-5">
-              <Calendar size={26} className="text-green-500" />
+            <div className="w-16 h-16 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-5">
+              <Calendar size={26} className="text-brand" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">No meetings yet</h3>
-            <p className="text-sm text-gray-500 max-w-xs mx-auto mb-8">
-              Paste a meeting link above to get started, or connect your Google Calendar
-              to automatically capture scheduled meetings.
+            <h3 className="text-[16px] font-semibold text-ink mb-2">No meetings yet</h3>
+            <p className="text-[14px] text-ink-4 max-w-xs mx-auto mb-8">
+              Join a live meeting, connect your calendar, or upload a recording to get started.
             </p>
             <div className="flex items-center justify-center gap-3 flex-wrap">
+              <button
+                onClick={() => {/* trigger join form */}}
+                className="flex items-center gap-2 px-5 py-2.5 bg-brand text-white rounded-xl text-[13px] font-medium hover:bg-brand-mid transition-colors"
+              >
+                <Play size={14} fill="currentColor" /> Join a meeting
+              </button>
               <Link href="/dashboard/calendar"
-                className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-colors">
-                <Calendar size={16} /> Connect Calendar
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-ink-2 rounded-xl text-[13px] font-medium hover:bg-off-white transition-colors">
+                <Calendar size={14} /> Connect Calendar
               </Link>
               <Link href="/dashboard/upload"
-                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                <Upload size={16} /> Upload Recording
+                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-ink-2 rounded-xl text-[13px] font-medium hover:bg-off-white transition-colors">
+                <Upload size={14} /> Upload Recording
               </Link>
             </div>
           </div>
@@ -415,8 +413,8 @@ export default function DashboardHome() {
         {/* No filter results */}
         {!loadingMeetings && !meetingsError && meetings.length > 0 && filtered.length === 0 && (
           <div className="text-center py-16">
-            <Search size={28} className="text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm">No {filter} meetings found.</p>
+            <Search size={26} className="text-ink-5 mx-auto mb-3" />
+            <p className="text-ink-4 text-[14px]">No {filter} meetings found.</p>
           </div>
         )}
 

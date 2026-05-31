@@ -187,7 +187,7 @@ export default function UploadPage() {
           <p className="text-sm text-muted-foreground mb-5">Your meeting has been transcribed and analyzed.</p>
           <button
             onClick={() => router.push(`/dashboard/meetings/${state.meetingId}`)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl font-semibold text-sm transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-mid text-white rounded-xl font-semibold text-sm transition-colors"
           >
             View meeting <ArrowRight size={16} />
           </button>
@@ -206,7 +206,7 @@ export default function UploadPage() {
             className={`
               relative border-2 rounded-2xl p-10 text-center transition-all cursor-pointer
               ${dragOver
-                ? 'border-[#6366f1] bg-[#6366f1]/5'
+                ? 'border-brand bg-brand-pale'
                 : file
                 ? 'border-border bg-surface-2 cursor-default'
                 : 'border-dashed border-border hover:border-accent/60 hover:bg-surface-3/40'
@@ -256,7 +256,7 @@ export default function UploadPage() {
           </div>
 
           {sizeError && (
-            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertCircle size={16} />
               {sizeError}
             </div>
@@ -272,7 +272,7 @@ export default function UploadPage() {
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="e.g. Q2 Planning Call"
-                  className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/20 transition-all"
+                  className="w-full bg-background border border-border text-foreground placeholder:text-muted-foreground px-4 py-3 rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 transition-all"
                 />
               </div>
               <div>
@@ -281,7 +281,7 @@ export default function UploadPage() {
                   type="date"
                   value={date}
                   onChange={e => setDate(e.target.value)}
-                  className="w-full bg-background border border-border text-foreground px-4 py-3 rounded-xl focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/20 transition-all"
+                  className="w-full bg-background border border-border text-foreground px-4 py-3 rounded-xl focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 transition-all"
                 />
               </div>
             </Panel>
@@ -296,7 +296,7 @@ export default function UploadPage() {
               </div>
               <div className="h-2 bg-surface-3 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#6366f1] rounded-full transition-all duration-300"
+                  className="h-full bg-brand rounded-full transition-all duration-300"
                   style={{ width: `${state.progress}%` }}
                 />
               </div>
@@ -312,14 +312,14 @@ export default function UploadPage() {
 
           {/* Error */}
           {state.kind === 'error' && (
-            <div className="flex items-center justify-between gap-4 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-red-400">
+            <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+              <div className="flex items-center gap-2 text-sm text-red-600">
                 <AlertCircle size={16} />
                 {state.message}
               </div>
               <button
                 onClick={handleRetry}
-                className="text-xs font-semibold text-red-400 underline underline-offset-2 shrink-0"
+                className="text-xs font-semibold text-red-600 underline underline-offset-2 shrink-0"
               >
                 Retry
               </button>
@@ -330,7 +330,7 @@ export default function UploadPage() {
           {file && state.kind === 'idle' && (
             <button
               onClick={handleUpload}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-[#6366f1] hover:bg-[#818cf8] text-white font-bold rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-brand hover:bg-brand-mid text-white font-bold rounded-xl transition-colors"
             >
               <UploadIcon size={18} />
               Upload &amp; Transcribe

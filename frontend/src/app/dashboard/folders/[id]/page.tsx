@@ -152,12 +152,12 @@ export default function FolderDetailPage({
               value={editName}
               onChange={e => setEditName(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-background border border-border text-foreground px-3 py-1.5 rounded-lg text-xl font-bold focus:outline-none focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1]/20 transition-all"
+              className="flex-1 bg-background border border-border text-foreground px-3 py-1.5 rounded-lg text-xl font-bold focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand/20 transition-all"
             />
             <button
               onClick={handleSave}
               disabled={saving}
-              className="p-1.5 text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+              className="p-1.5 text-green-600 hover:bg-green-500/10 rounded-lg transition-colors"
               title="Save"
             >
               <Check size={16} />
@@ -195,7 +195,7 @@ export default function FolderDetailPage({
         </p>
         <button
           onClick={() => router.push('/dashboard')}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-xl text-sm font-semibold transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brand-mid text-white rounded-xl text-sm font-semibold transition-colors"
         >
           Go to dashboard
         </button>
