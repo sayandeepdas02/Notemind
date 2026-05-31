@@ -1011,7 +1011,6 @@ export default function LandingPage() {
       <Testimonials />
       <Pricing />
       <FAQ />
-      <CTASection />
       <Footer />
     </div>
   );
