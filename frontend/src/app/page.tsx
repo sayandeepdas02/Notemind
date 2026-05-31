@@ -3,9 +3,12 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Header } from '@/components/ui/header-2';
+import { NotemindMark } from '@/components/ui/notemind-mark';
 import {
-  ArrowRight, Menu, X,
-  Mic, Brain, Search,
+  ArrowRight,
+  Brain, Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   Plus, Minus,
 } from 'lucide-react';
@@ -37,16 +40,13 @@ function IconGithub({ size = 16, className }: { size?: number; className?: strin
 }
 
 // ── Logo (shared) ─────────────────────────────────────────────
+// Thin wrapper around NotemindMark; pass className to control colour.
+// text-white → white mark (dark backgrounds)
+// text-brand  → blue mark  (light backgrounds)
 
-function Logo({ size = 'sm', invert = false }: { size?: 'sm' | 'md'; invert?: boolean }) {
-  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
-  const iconSize = size === 'sm' ? 16 : 18;
-  return (
-    <div className={`${dim} rounded-xl flex items-center justify-center shrink-0`}
-      style={{ background: invert ? 'rgba(255,255,255,0.15)' : '#1a6b3c' }}>
-      <Mic size={iconSize} className="text-white" />
-    </div>
-  );
+function Logo({ size = 'sm', className = '' }: { size?: 'sm' | 'md'; className?: string }) {
+  const h = size === 'sm' ? 'h-7' : 'h-8';
+  return <NotemindMark className={cn(h, 'w-auto', className)} />;
 }
 
 // ── Reusable primitives ───────────────────────────────────────
@@ -87,80 +87,6 @@ function CheckItem({ text }: { text: string }) {
   );
 }
 
-// ── Navbar — Kernel style (transparent on photo bg) ──────────
-
-function Navbar() {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  return (
-    <>
-      {/* Transparent nav floating over the hero photo */}
-      <nav className="fixed top-0 inset-x-0 z-50 h-[68px] flex items-center px-6 lg:px-12">
-        {/* Logo — left */}
-        <Link href="/" className="flex items-center gap-2.5 shrink-0">
-          <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
-        </Link>
-
-        {/* Nav links — absolute center */}
-        <div className="hidden md:flex items-center gap-8 text-[14px] font-normal text-white/70 absolute left-1/2 -translate-x-1/2">
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#pricing"  className="hover:text-white transition-colors">Pricing</a>
-          <a href="#faq"      className="hover:text-white transition-colors">About</a>
-        </div>
-
-        {/* CTA — right (white pill, dark text — exactly Kernel) */}
-        <div className="hidden md:flex ml-auto">
-          <Link href="/auth"
-            className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm">
-            Start for free
-          </Link>
-        </div>
-
-        <button
-          aria-label="Open menu"
-          className="md:hidden p-2 text-white ml-auto"
-          onClick={() => setMobileOpen(true)}
-        >
-          <Menu size={20} />
-        </button>
-      </nav>
-
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] flex flex-col p-6"
-            style={{ background: '#0d1520' }}
-          >
-            <div className="flex items-center justify-between mb-10">
-              <span className="font-serif text-white text-[20px]">Notemind</span>
-              <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="p-2 text-white/60">
-                <X size={20} />
-              </button>
-            </div>
-            <nav className="flex flex-col gap-1">
-              {[['#features','Features'],['#pricing','Pricing'],['#faq','About']].map(([href, label]) => (
-                <a key={href} href={href} onClick={() => setMobileOpen(false)}
-                  className="py-4 border-b border-white/10 text-[18px] font-medium text-white/80">
-                  {label}
-                </a>
-              ))}
-            </nav>
-            <div className="mt-auto">
-              <Link href="/auth" onClick={() => setMobileOpen(false)}
-                className="block w-full text-center py-3.5 bg-white text-[#0d1520] rounded-full font-semibold">
-                Start for free
-              </Link>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
 
 // ── Hero — Kernel style (sky photo + dark overlay) ───────────
 
@@ -207,7 +133,7 @@ function Hero() {
       />
 
       {/* Content — vertically centered in upper ~65% */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-44 pb-16">
+      <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl mx-auto w-full pt-40 pb-16">
 
         {/* Small label — matches Kernel exactly */}
         <motion.p
@@ -299,9 +225,9 @@ function MockMeetingCard({ m }: { m: typeof MOCK_MEETINGS[0] }) {
   return (
     <div className="bg-white rounded-xl p-4 border-l-[3px]"
       style={{
-        borderLeftColor: m.status === 'live' ? '#dc2626' : '#1a6b3c',
+        borderLeftColor: m.status === 'live' ? '#dc2626' : '#1C80F2',
         border: '1px solid #f3f4f6',
-        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : '#1a6b3c'}`,
+        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : '#1C80F2'}`,
         boxShadow: '0 2px 12px rgba(15,26,20,0.05)',
       }}>
       <div className="flex items-start justify-between mb-2 gap-2">
@@ -335,7 +261,7 @@ function DashboardPreview() {
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
+                <div className="w-3 h-3 rounded-full bg-[#1C80F2]" />
               </div>
               <div className="flex-1 flex justify-center">
                 <div className="bg-white rounded-lg px-4 py-1 text-[12px] text-ink-4 border border-gray-200 flex items-center gap-1.5 max-w-[240px] w-full justify-center">
@@ -348,7 +274,7 @@ function DashboardPreview() {
             <div className="flex bg-white min-h-[400px]">
               <div className="w-[200px] shrink-0 bg-off-white border-r border-gray-100 p-3 flex-col gap-1 hidden sm:flex">
                 <div className="flex items-center gap-2 px-3 py-2 mb-3">
-                  <Logo size="sm" />
+                  <Logo size="sm" className="text-brand" />
                   <span className="font-serif text-[14px] text-ink">Notemind</span>
                 </div>
                 {[{ label: 'All meetings', active: true }, { label: 'Upcoming', active: false }, { label: 'Action items', active: false }, { label: 'AI Memory', active: false }, { label: 'Upload', active: false }].map(item => (
@@ -377,7 +303,7 @@ function DashboardPreview() {
 // ── Features Grid ─────────────────────────────────────────────
 
 const FEATURES_DATA = [
-  { icon: Mic,         title: 'Real-time transcription',  desc: 'Live, speaker-identified transcripts with 98%+ accuracy across 30+ languages.' },
+  { icon: Volume2,     title: 'Real-time transcription',  desc: 'Live, speaker-identified transcripts with 98%+ accuracy across 30+ languages.' },
   { icon: Clock,       title: 'Instant AI summaries',     desc: 'Crisp summaries seconds after the call ends — no waiting, no manual review.' },
   { icon: CheckSquare, title: 'Action item tracking',     desc: 'AI extracts commitments and routes them to the right people automatically.' },
   { icon: Search,      title: 'Ask your meetings',        desc: 'Search your entire history in plain English. Cited answers with timestamps.' },
@@ -455,21 +381,21 @@ function AIChatSplit() {
 
         <RevealWrapper delay={0.15}>
           <div className="rounded-2xl overflow-hidden" style={{
-            background: 'linear-gradient(135deg, rgba(26,107,60,0.12), rgba(13,31,45,0.85))',
+            background: 'linear-gradient(135deg, rgba(28,128,242,0.10), rgba(13,31,45,0.85))',
             padding: '1px',
             boxShadow: '0 32px 80px rgba(13,31,45,0.28)',
           }}>
             <div className="bg-navy rounded-[14px] p-5" style={{ aspectRatio: '1.1/1' }}>
               <div className="absolute-off top-0 right-0 w-60 h-60 rounded-full opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1a6b3c, transparent 70%)', position: 'absolute' }} />
+                style={{ background: 'radial-gradient(circle, #1C80F2, transparent 70%)', position: 'absolute' }} />
 
               <div className="flex items-center gap-2 mb-5">
                 <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center">
                   <Brain size={13} className="text-white" />
                 </div>
                 <span className="text-white/75 text-[13px] font-medium">AI Memory</span>
-                <span className="ml-auto text-[10px] text-green-400 font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />Online
+                <span className="ml-auto text-[10px] text-[#1C80F2] font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1C80F2] animate-pulse" />Online
                 </span>
               </div>
 
@@ -488,7 +414,7 @@ function AIChatSplit() {
                       {b.source && (
                         <div className="mt-2 pt-1.5 border-t border-white/10">
                           {/* Citation as a proper pill */}
-                          <span className="inline-flex items-center gap-1 bg-green-400/15 border border-green-400/25 text-green-300 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 bg-[#1C80F2]/15 border border-[#1C80F2]/25 text-white/80 text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             ↗ {b.source}
                           </span>
                         </div>
@@ -514,7 +440,7 @@ function TranscriptSplit() {
     { speaker: 'You', text: 'Can we get an estimate on the API work by Friday?' },
     { speaker: 'Marcus', text: 'Sure, I\'ll have a breakdown ready by end of week.', active: true },
   ];
-  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-teal-500', Marcus: 'bg-blue-500', You: 'bg-brand' };
+  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-[#1C80F2]', Marcus: 'bg-[#0d1520]', You: 'bg-white/20' };
   const KEYWORDS = new Set(['API', 'mobile', 'timeline', 'Friday']);
 
   return (
@@ -547,7 +473,7 @@ function TranscriptSplit() {
                       {line.text.split(' ').map((word, wi) => {
                         const clean = word.replace(/[.,?]/g, '');
                         return KEYWORDS.has(clean) ? (
-                          <mark key={wi} className="bg-green-100 text-green-800 rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
+                          <mark key={wi} className="bg-[#1C80F2]/12 text-[#1C80F2] rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
                         ) : <span key={wi}>{word} </span>;
                       })}
                       {'active' in line && line.active && (
@@ -566,7 +492,7 @@ function TranscriptSplit() {
           <RevealWrapper>
             <SectionLabel text="Live Transcription" />
             <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Every word,<br /><em className="not-italic" style={{ color: '#1a6b3c' }}>perfectly captured</em>
+              Every word,<br /><em className="not-italic" style={{ color: '#1C80F2' }}>perfectly captured</em>
             </h2>
             <p className="text-[16px] text-ink-3 leading-relaxed mb-10">
               Speaker-identified transcription in real-time. Our AI highlights key decisions and
@@ -647,7 +573,7 @@ function HowItWorks() {
 // ── Testimonials ──────────────────────────────────────────────
 
 const TESTIMONIALS = [
-  { quote: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product at Vercel', initials: 'SC', avatarBg: 'bg-teal-600' },
+  { quote: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product at Vercel', initials: 'SC', avatarBg: 'bg-[#1C80F2]' },
   { quote: 'The AI memory is genuinely impressive. I asked about a decision from three months ago and got the exact quote with a timestamp. Game changer.', name: 'James Rivera', role: 'Engineering Manager at Linear', initials: 'JR', avatarBg: 'bg-brand' },
   { quote: "We've tried every meeting tool. Notemind is the only one that actually works — action items are assigned and followed up automatically.", name: 'Priya Mehta', role: 'Founder at Loom', initials: 'PM', avatarBg: 'bg-blue-600' },
 ];
@@ -757,27 +683,26 @@ function Pricing() {
           <RevealWrapper delay={0.08}>
             <div className="rounded-2xl p-7 flex flex-col relative overflow-hidden" style={{
               background: '#0d1f2d',
-              boxShadow: '0 0 0 1px rgba(26,107,60,0.3), 0 24px 60px rgba(13,31,45,0.4)',
+              boxShadow: '0 0 0 1px rgba(28,128,242,0.25), 0 24px 60px rgba(13,31,45,0.4)',
             }}>
               <div className="absolute -top-px left-1/2 -translate-x-1/2 px-4 py-1 bg-brand text-white text-[11px] font-bold rounded-b-xl tracking-wider whitespace-nowrap">
                 MOST POPULAR
               </div>
               <div className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1a6b3c, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+                style={{ background: 'radial-gradient(circle, #1C80F2, transparent 70%)', transform: 'translate(30%, -30%)' }} />
 
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-green-400/70 mb-4 relative z-10">Pro</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/60 mb-4 relative z-10">Pro</p>
               <div className="flex items-baseline gap-1 mb-1 relative z-10">
                 <span className="font-serif text-[52px] text-white leading-none">${proPrice}</span>
-                <span className="text-green-300/50 text-[14px] self-end mb-1">/seat/mo</span>
+                <span className="text-white/50 text-[14px] self-end mb-1">/seat/mo</span>
               </div>
-              <p className="text-[12px] text-green-300/40 mb-6 relative z-10">
+              <p className="text-[12px] text-white/40 mb-6 relative z-10">
                 {annual ? 'Billed annually' : 'Billed monthly'}
               </p>
               <ul className="space-y-2.5 mb-8 flex-1 relative z-10">
                 {['Unlimited meetings', 'Multi-stage AI pipeline', 'Action item tracking', 'AI Memory & Search', 'Calendar integration', 'Team workspace', 'Priority support'].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-[14px] text-green-100/85">
-                    {/* Brighter checks on dark bg */}
-                    <CheckCircle size={14} className="shrink-0" style={{ color: '#4ade80' }} /> {f}
+                  <li key={f} className="flex items-center gap-2.5 text-[14px] text-white/85">
+                    <CheckCircle size={14} className="text-[#1C80F2] shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
@@ -920,12 +845,34 @@ function CTASection() {
   );
 }
 
-// ── Footer — Kernel style (sky bg + large watermark) ─────────
+// ── Footer ────────────────────────────────────────────────────
 
 function Footer() {
+  const productLinks = [
+    { label: 'Features',     href: '#features' },
+    { label: 'Pricing',      href: '#pricing' },
+    { label: 'Integrations', href: '#' },
+    { label: 'Changelog',    href: '#' },
+    { label: 'Roadmap',      href: '#' },
+  ];
+  const companyLinks = [
+    { label: 'About',    href: '#faq' },
+    { label: 'Blog',     href: '#' },
+    { label: 'Careers',  href: '#' },
+    { label: 'Contact',  href: '#' },
+    { label: 'Press',    href: '#' },
+  ];
+  const developerLinks = [
+    { label: 'API Docs',    href: '#' },
+    { label: 'SDK Reference', href: '#' },
+    { label: 'Webhooks',    href: '#' },
+    { label: 'Status Page', href: '#' },
+    { label: 'Open Source', href: '#' },
+  ];
+
   return (
     <footer
-      className="relative overflow-hidden"
+      className="relative overflow-hidden border-t border-white/[0.10]"
       style={{
         backgroundImage: "url('/hero-landscape.png'), linear-gradient(170deg, #0d1520 0%, #0d2035 40%, #1a4a70 100%)",
         backgroundSize: 'cover',
@@ -933,79 +880,110 @@ function Footer() {
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0" style={{ background: 'rgba(13,21,32,0.78)' }} />
+      <div className="absolute inset-0" style={{ background: 'rgba(13,21,32,0.82)' }} />
 
-      {/* Giant "Notemind" watermark — Kernel exact position */}
-      <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 select-none pointer-events-none whitespace-nowrap font-serif leading-none"
-        style={{ fontSize: 'clamp(100px, 14vw, 200px)', color: 'rgba(255,255,255,0.07)', lineHeight: 0.85 }}
-      >
-        Notemind
-      </div>
-
-      <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-16 pb-10">
-        {/* Top row: logo+desc+socials | nav columns */}
+      {/* Content — sits above the watermark */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-16">
+        {/* Main grid: logo col + 3 nav columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-          {/* Logo + description + social icons */}
-          <div className="md:col-span-1">
-            <div className="flex items-center gap-2 mb-3">
-              <Mic size={16} className="text-white shrink-0" />
+
+          {/* Column 1: Logo + description + socials */}
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <Logo size="sm" className="text-white" />
               <span className="font-serif text-white text-[20px] leading-tight">Notemind</span>
             </div>
-            <p className="text-[13px] text-white/40 leading-relaxed mb-5 max-w-[200px]">
+            <p className="text-[13px] text-white/65 leading-relaxed mb-6 max-w-[210px]">
               Notemind helps teams capture every meeting, manage action items, and
               build AI-powered workflows that scale.
             </p>
-            {/* Social icons — exactly like Kernel row */}
-            <div className="flex items-center gap-3">
-              <a href="https://youtube.com" aria-label="YouTube"
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/50 hover:text-white/80 hover:border-white/40 transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </a>
-              <a href="https://instagram.com" aria-label="Instagram"
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/50 hover:text-white/80 hover:border-white/40 transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-                </svg>
+            {/* Social icons — bare, no circle border */}
+            <div className="flex items-center gap-4">
+              <a href="https://twitter.com" aria-label="Twitter / X"
+                className="text-white/50 hover:text-[#1d9bf0] transition-colors">
+                <IconTwitterX size={18} />
               </a>
               <a href="https://linkedin.com" aria-label="LinkedIn"
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/50 hover:text-white/80 hover:border-white/40 transition-colors">
-                <IconLinkedin size={14} />
+                className="text-white/50 hover:text-[#0a66c2] transition-colors">
+                <IconLinkedin size={18} />
               </a>
-              <a href="https://twitter.com" aria-label="Twitter / X"
-                className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/50 hover:text-white/80 hover:border-white/40 transition-colors">
-                <IconTwitterX size={14} />
+              <a href="https://github.com" aria-label="GitHub"
+                className="text-white/50 hover:text-white transition-colors">
+                <IconGithub size={18} />
               </a>
             </div>
           </div>
 
-          {/* Nav columns — Kernel has 2 columns */}
-          <div className="md:col-span-1 md:col-start-2">
+          {/* Column 2: Product */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Product</p>
             <ul className="space-y-3">
-              {['Home', 'Features', 'Pricing'].map(l => (
-                <li key={l}><a href="#" className="text-[14px] text-white/55 hover:text-white/85 transition-colors">{l}</a></li>
+              {productLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
+                </li>
               ))}
             </ul>
           </div>
-          <div className="md:col-span-1">
+
+          {/* Column 3: Company */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Company</p>
             <ul className="space-y-3">
-              {['About', 'Contact'].map(l => (
-                <li key={l}><a href="#" className="text-[14px] text-white/55 hover:text-white/85 transition-colors">{l}</a></li>
+              {companyLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Column 4: Developers */}
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Developers</p>
+            <ul className="space-y-3">
+              {developerLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
+                </li>
               ))}
             </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-white/[0.08] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[13px] text-white/30">Copyright © 2026 Notemind</p>
-          <div className="flex items-center gap-5 text-[13px] text-white/30">
-            <a href="#" className="hover:text-white/55 transition-colors">Privacy policy</a>
-            <a href="#" className="hover:text-white/55 transition-colors">Terms of service</a>
+        <div className="border-t border-white/[0.08] pt-5 pb-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1C80F2] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1C80F2]" />
+            </span>
+            <span className="text-[13px] text-white/50">All systems operational</span>
+          </div>
+
+          <p className="text-[13px] text-white/35">Copyright © 2026 Notemind</p>
+
+          <div className="flex items-center gap-5 text-[13px] text-white/40">
+            <a href="#" className="hover:text-white/70 transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white/70 transition-colors">Terms</a>
+            <a href="#" className="hover:text-white/70 transition-colors">Security</a>
           </div>
         </div>
+      </div>
+
+      {/* Giant watermark — full word visible, sits below the bottom bar */}
+      <div className="relative z-10 flex justify-center select-none pointer-events-none pb-6">
+        <span
+          className="font-serif whitespace-nowrap leading-none"
+          style={{
+            fontSize: 'clamp(80px, 14vw, 220px)',
+            color: 'rgba(255,255,255,0.07)',
+            lineHeight: 1,
+          }}
+        >
+          Notemind
+        </span>
       </div>
     </footer>
   );
@@ -1015,8 +993,8 @@ function Footer() {
 
 export default function LandingPage() {
   return (
-    <div className="bg-white text-ink selection:bg-brand-light">
-      <Navbar />
+    <div className="text-ink selection:bg-brand-light">
+      <Header />
       <Hero />
       <LogoStrip />
       <DashboardPreview />
