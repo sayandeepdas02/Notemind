@@ -563,7 +563,7 @@ const TESTIMONIALS = [
 
 function Testimonials() {
   return (
-    <section className="bg-white py-24 px-6 lg:px-12">
+    <section id="testimonials" className="bg-white py-24 px-6 lg:px-12">
       <div className="max-w-6xl mx-auto">
         <RevealWrapper>
           <div className="text-center mb-14">

@@ -8,9 +8,10 @@ import { useScroll } from '@/components/ui/use-scroll';
 import { NotemindMark } from '@/components/ui/notemind-mark';
 
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing',  href: '#pricing'  },
-  { label: 'About',    href: '#faq'      },
+  { label: 'Features',     href: '#features'     },
+  { label: 'Pricing',      href: '#pricing'      },
+  { label: 'Testimonials', href: '#testimonials' },
+  { label: 'Blog',         href: '#'             },
 ];
 
 // Use 24px threshold so top-6 (24px) sticky is already satisfied when the
