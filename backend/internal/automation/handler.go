@@ -39,7 +39,7 @@ func (h *Handler) CreateRule(c *gin.Context) {
 		return
 	}
 	rule.UserID = userID
-	if rule.Enabled == false && rule.Name == "" {
+	if !rule.Enabled && rule.Name == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "name and trigger are required"})
 		return
 	}

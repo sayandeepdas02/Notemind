@@ -211,7 +211,6 @@ func (r *Repository) Search(ctx context.Context, userID, query string, filters S
 	if filters.FolderID != "" {
 		baseQ += " AND EXISTS (SELECT 1 FROM meeting_folder_memberships mf WHERE mf.meeting_id=m.id AND mf.folder_id=$" + itoa(argIdx) + ")"
 		args = append(args, filters.FolderID)
-		argIdx++
 	}
 
 	baseQ += " ORDER BY rank DESC, m.created_at DESC LIMIT 50"

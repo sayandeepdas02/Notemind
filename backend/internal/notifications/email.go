@@ -204,13 +204,13 @@ func (s *EmailService) send(ctx context.Context, to, subject, html string) error
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Resend request failed: %w", err)
+		return fmt.Errorf("resend request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		respBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("Resend API error %d: %s", resp.StatusCode, respBody)
+		return fmt.Errorf("resend API error %d: %s", resp.StatusCode, respBody)
 	}
 	return nil
 }

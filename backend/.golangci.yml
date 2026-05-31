@@ -1,0 +1,47 @@
+version: "2"
+
+issues:
+  exclude-rules:
+    # defer X.Close() / defer tx.Rollback() — standard Go cleanup pattern;
+    # the error is intentionally not checked because we are already in a
+    # teardown path and there is nothing useful to do with the error.
+    - linters: [errcheck]
+      source: "defer .+\\.Close\\(\\)"
+    - linters: [errcheck]
+      source: "defer .+\\.Rollback\\(\\)"
+    - linters: [errcheck]
+      source: "defer .+\\.Stop\\(\\)"
+
+    # Inline fire-and-forget cleanup that mirrors the defer pattern above.
+    - linters: [errcheck]
+      text: "Error return value of `(.*\\.Close|.*\\.Rollback|.*\\.Stop)` is not checked"
+
+    # SSE / HTTP streaming: Write errors on gin.ResponseWriter and fmt.Fprintf
+    # to an http.ResponseWriter cannot be meaningfully handled mid-stream.
+    - linters: [errcheck]
+      text: "Error return value of `(c\\.Writer\\.Write|fmt\\.Fprintf|fmt\\.Sscanf)` is not checked"
+    - linters: [errcheck]
+      source: "c\\.Writer\\.Write\\("
+    - linters: [errcheck]
+      source: "fmt\\.Sscanf\\("
+    - linters: [errcheck]
+      source: "fmt\\.Fprintf\\(c\\.Writer"
+
+    # Fire-and-forget queue/client close at shutdown.
+    - linters: [errcheck]
+      source: "c\\.client\\.Close\\("
+
+    # Heartbeat is best-effort; failure is non-fatal and already logged
+    # at the call sites that care.
+    - linters: [errcheck]
+      source: "Heartbeat\\("
+
+    # zip writer / file write in export — error is propagated by zw.Close below.
+    - linters: [errcheck]
+      source: "f\\.Write\\("
+    - linters: [errcheck]
+      source: "zw\\.Close\\("
+
+    # ExecContext for best-effort background cleanup (embedding chunk purge).
+    - linters: [errcheck]
+      source: "db\\.DB\\.ExecContext\\("

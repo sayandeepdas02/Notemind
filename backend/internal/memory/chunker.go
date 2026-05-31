@@ -50,9 +50,9 @@ func (c *SemanticChunker) Chunk(meetingID string, segments []meeting.TranscriptS
 			segIDs = append(segIDs, s.ID)
 			speakers[s.Speaker]++
 			if !s.AbsoluteStartTime.IsZero() {
-				sb.WriteString(fmt.Sprintf("[%s] %s: %s\n", s.AbsoluteStartTime.Format("15:04:05"), s.Speaker, s.Text))
+				fmt.Fprintf(&sb, "[%s] %s: %s\n", s.AbsoluteStartTime.Format("15:04:05"), s.Speaker, s.Text)
 			} else {
-				sb.WriteString(fmt.Sprintf("%s: %s\n", s.Speaker, s.Text))
+				fmt.Fprintf(&sb, "%s: %s\n", s.Speaker, s.Text)
 			}
 		}
 
