@@ -29,7 +29,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Workspace',
     links: [
-      { name: 'Meetings',  href: '/dashboard',         icon: Video,       exact: true },
       { name: 'Folders',   href: '/dashboard/folders', icon: FolderOpen },
     ],
   },

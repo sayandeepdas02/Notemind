@@ -180,8 +180,8 @@ export default function UploadPage() {
       {/* Done state */}
       {state.kind === 'done' && (
         <Panel padding="lg" className="text-center">
-          <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={28} className="text-green-400" />
+          <div className="w-14 h-14 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={28} className="text-brand" />
           </div>
           <h2 className="text-lg font-bold text-foreground mb-2">Transcription complete!</h2>
           <p className="text-sm text-muted-foreground mb-5">Your meeting has been transcribed and analyzed.</p>

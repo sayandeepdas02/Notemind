@@ -204,11 +204,11 @@ const MOCK_MEETINGS = [
 
 function MockMeetingCard({ m }: { m: typeof MOCK_MEETINGS[0] }) {
   return (
-    <div className="bg-white rounded-xl p-4 border-l-[3px]"
+    <div
+      className="bg-white rounded-xl p-4"
       style={{
-        borderLeftColor: m.status === 'live' ? '#dc2626' : '#1C80F2',
         border: '1px solid #f3f4f6',
-        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : '#1C80F2'}`,
+        borderLeft: `3px solid ${m.status === 'live' ? '#dc2626' : 'var(--color-brand)'}`,
         boxShadow: '0 2px 12px rgba(15,26,20,0.05)',
       }}>
       <div className="flex items-start justify-between mb-2 gap-2">
@@ -242,7 +242,7 @@ function DashboardPreview() {
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-400" />
                 <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-[#1C80F2]" />
+                <div className="w-3 h-3 rounded-full bg-brand" />
               </div>
               <div className="flex-1 flex justify-center">
                 <div className="bg-white rounded-lg px-4 py-1 text-[12px] text-ink-4 border border-gray-200 flex items-center gap-1.5 max-w-[240px] w-full justify-center">
@@ -375,8 +375,8 @@ function AIChatSplit() {
                   <Brain size={13} className="text-white" />
                 </div>
                 <span className="text-white/75 text-[13px] font-medium">AI Memory</span>
-                <span className="ml-auto text-[10px] text-[#1C80F2] font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1C80F2] animate-pulse" />Online
+                <span className="ml-auto text-[10px] text-brand font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />Online
                 </span>
               </div>
 
@@ -395,7 +395,7 @@ function AIChatSplit() {
                       {b.source && (
                         <div className="mt-2 pt-1.5 border-t border-white/10">
                           {/* Citation as a proper pill */}
-                          <span className="inline-flex items-center gap-1 bg-[#1C80F2]/15 border border-[#1C80F2]/25 text-white/80 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 bg-brand/15 border border-brand/25 text-white/80 text-[10px] font-semibold px-2 py-0.5 rounded-full">
                             ↗ {b.source}
                           </span>
                         </div>
@@ -421,7 +421,7 @@ function TranscriptSplit() {
     { speaker: 'You', text: 'Can we get an estimate on the API work by Friday?' },
     { speaker: 'Marcus', text: 'Sure, I\'ll have a breakdown ready by end of week.', active: true },
   ];
-  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-[#1C80F2]', Marcus: 'bg-[#0d1520]', You: 'bg-white/20' };
+  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-brand', Marcus: 'bg-ink', You: 'bg-ink-3' };
   const KEYWORDS = new Set(['API', 'mobile', 'timeline', 'Friday']);
 
   return (
@@ -454,7 +454,7 @@ function TranscriptSplit() {
                       {line.text.split(' ').map((word, wi) => {
                         const clean = word.replace(/[.,?]/g, '');
                         return KEYWORDS.has(clean) ? (
-                          <mark key={wi} className="bg-[#1C80F2]/12 text-[#1C80F2] rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
+                          <mark key={wi} className="bg-brand/10 text-brand rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
                         ) : <span key={wi}>{word} </span>;
                       })}
                       {'active' in line && line.active && (
@@ -473,7 +473,7 @@ function TranscriptSplit() {
           <RevealWrapper>
             <SectionLabel text="Live Transcription" />
             <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Every word,<br /><em className="not-italic" style={{ color: '#1C80F2' }}>perfectly captured</em>
+              Every word,<br /><em className="not-italic text-brand">perfectly captured</em>
             </h2>
             <p className="text-[16px] text-ink-3 leading-relaxed mb-10">
               Speaker-identified transcription in real-time. Our AI highlights key decisions and
@@ -527,7 +527,7 @@ function HowItWorks() {
             left: 'calc(16.67% + 32px)',
             right: 'calc(16.67% + 32px)',
             height: '2px',
-            borderTop: '2px dashed #deeae2',
+            borderTop: '2px dashed rgba(28,128,242,0.22)',
             zIndex: 0,
           }} />
 
@@ -554,9 +554,9 @@ function HowItWorks() {
 // ── Testimonials ──────────────────────────────────────────────
 
 const TESTIMONIALS = [
-  { quote: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product at Vercel', initials: 'SC', avatarBg: 'bg-[#1C80F2]' },
+  { quote: 'Notemind turned our weekly syncs from 45 minutes of back-and-forth into 5 minutes of reviewing the AI summary. We never miss an action item.', name: 'Sarah Chen', role: 'Head of Product at Vercel', initials: 'SC', avatarBg: 'bg-brand' },
   { quote: 'The AI memory is genuinely impressive. I asked about a decision from three months ago and got the exact quote with a timestamp. Game changer.', name: 'James Rivera', role: 'Engineering Manager at Linear', initials: 'JR', avatarBg: 'bg-brand' },
-  { quote: "We've tried every meeting tool. Notemind is the only one that actually works — action items are assigned and followed up automatically.", name: 'Priya Mehta', role: 'Founder at Loom', initials: 'PM', avatarBg: 'bg-blue-600' },
+  { quote: "We've tried every meeting tool. Notemind is the only one that actually works — action items are assigned and followed up automatically.", name: 'Priya Mehta', role: 'Founder at Loom', initials: 'PM', avatarBg: 'bg-brand' },
 ];
 
 function Testimonials() {
@@ -683,7 +683,7 @@ function Pricing() {
               <ul className="space-y-2.5 mb-8 flex-1 relative z-10">
                 {['Unlimited meetings', 'Multi-stage AI pipeline', 'Action item tracking', 'AI Memory & Search', 'Calendar integration', 'Team workspace', 'Priority support'].map(f => (
                   <li key={f} className="flex items-center gap-2.5 text-[14px] text-white/85">
-                    <CheckCircle size={14} className="text-[#1C80F2] shrink-0" /> {f}
+                    <CheckCircle size={14} className="text-brand shrink-0" /> {f}
                   </li>
                 ))}
               </ul>
@@ -904,11 +904,11 @@ function Footer() {
             {/* Social icons — bare, no circle border */}
             <div className="flex items-center gap-4">
               <a href="https://twitter.com" aria-label="Twitter / X"
-                className="text-white/50 hover:text-[#1d9bf0] transition-colors">
+                className="text-white/50 hover:text-white transition-colors">
                 <IconTwitterX size={18} />
               </a>
               <a href="https://linkedin.com" aria-label="LinkedIn"
-                className="text-white/50 hover:text-[#0a66c2] transition-colors">
+                className="text-white/50 hover:text-white transition-colors">
                 <IconLinkedin size={18} />
               </a>
               <a href="https://github.com" aria-label="GitHub"
@@ -960,8 +960,8 @@ function Footer() {
           {/* Status indicator */}
           <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1C80F2] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1C80F2]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand" />
             </span>
             <span className="text-[13px] text-white/50">All systems operational</span>
           </div>

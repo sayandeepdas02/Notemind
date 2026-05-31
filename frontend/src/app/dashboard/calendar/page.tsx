@@ -95,7 +95,7 @@ function MeetBadge({ type }: { type: 'google_meet' | 'zoom' | null | undefined }
   }
   if (type === 'zoom') {
     return (
-      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-600">
+      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-ink-3">
         Zoom
       </span>
     );
@@ -130,7 +130,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
           href={event.meeting_link}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand border border-green-500/20 rounded-lg text-xs font-semibold hover:bg-green-500/20 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-light text-brand border border-brand/20 rounded-lg text-xs font-semibold hover:bg-brand/20 transition-colors shrink-0"
         >
           <Video size={12} />
           Join now

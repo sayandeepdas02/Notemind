@@ -185,7 +185,7 @@ html, body {
 }
 
 .hero-fade-bottom {
-  background: linear-gradient(to bottom, transparent 60%, #f8faf9 100%);
+  background: linear-gradient(to bottom, transparent 60%, #f8fafc 100%);
 }
 
 /* ── Glass card ──────────────────────────────────────────────── */

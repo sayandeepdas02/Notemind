@@ -39,9 +39,9 @@ interface Rule {
 // ── Constants ─────────────────────────────────────────────────
 
 const TRIGGER_LABELS: Record<TriggerEvent, { label: string; color: string }> = {
-  when_meeting_scheduled: { label: 'Meeting scheduled', color: 'bg-blue-500/10 text-blue-400' },
-  when_meeting_starts:    { label: 'Meeting starts',    color: 'bg-orange-50 text-orange-600' },
-  when_meeting_ends:      { label: 'Meeting ends',      color: 'bg-green-500/10 text-green-400' },
+  when_meeting_scheduled: { label: 'Meeting scheduled', color: 'bg-brand/10 text-brand'    },
+  when_meeting_starts:    { label: 'Meeting starts',    color: 'bg-brand-light text-brand'  },
+  when_meeting_ends:      { label: 'Meeting ends',      color: 'bg-gray-100 text-ink-3'     },
 };
 
 const TRIGGER_VALUES: { value: TriggerEvent; label: string; desc: string }[] = [

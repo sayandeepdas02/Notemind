@@ -157,7 +157,7 @@ export default function FolderDetailPage({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="p-1.5 text-green-600 hover:bg-green-500/10 rounded-lg transition-colors"
+              className="p-1.5 text-brand hover:bg-brand/10 rounded-lg transition-colors"
               title="Save"
             >
               <Check size={16} />

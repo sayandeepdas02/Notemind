@@ -60,7 +60,7 @@ function relativeDate(isoString: string): string {
 
 const PROVIDER_STYLES: Record<MeetingProvider, { label: string; className: string }> = {
   google_meet: { label: 'Google Meet', className: 'bg-brand-light text-brand border-brand/20' },
-  zoom:        { label: 'Zoom',        className: 'bg-blue-50 text-blue-700 border-blue-200'  },
+  zoom:        { label: 'Zoom',        className: 'bg-gray-100 text-ink-3 border-gray-200'   },
   upload:      { label: 'Uploaded',    className: 'bg-gray-100 text-gray-500 border-gray-200' },
 };
 
@@ -315,8 +315,8 @@ export default function DashboardHome() {
             { label: 'This week', value: meetings.filter(m => Date.now() - new Date(m.created_at).getTime() < 7 * 86400000).length },
           ].map(stat => (
             <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-4">
-              <p className="text-[24px] font-semibold text-ink">{stat.value}</p>
-              <p className="text-[12px] text-ink-5 mt-0.5">{stat.label}</p>
+              <p className="font-serif text-[30px] text-ink leading-none">{stat.value}</p>
+              <p className="text-[12px] text-ink-5 mt-1.5">{stat.label}</p>
             </div>
           ))}
         </div>

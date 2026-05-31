@@ -24,9 +24,9 @@ function relativeTime(date: Date): string {
 // ── Notification icon ─────────────────────────────────────────
 
 function NotifIcon({ type }: { type: Notification['type'] }) {
-  if (type === 'summary_ready') return <FileText size={14} className="text-green-600" />;
-  if (type === 'bot_joined') return <Bot size={14} className="text-green-400" />;
-  return <LogOut size={14} className="text-orange-400" />;
+  if (type === 'summary_ready') return <FileText size={14} className="text-brand" />;
+  if (type === 'bot_joined') return <Bot size={14} className="text-brand" />;
+  return <LogOut size={14} className="text-ink-4" />;
 }
 
 // ── Notification item ─────────────────────────────────────────
@@ -36,7 +36,7 @@ function NotifItem({ notif }: { notif: Notification }) {
     <div
       className={cn(
         'flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0 transition-colors hover:bg-surface-3/50',
-        !notif.read && 'border-l-2 border-l-blue-500'
+        !notif.read && 'border-l-2 border-l-brand'
       )}
     >
       <div className="mt-0.5 w-7 h-7 rounded-full bg-surface-3 border border-border flex items-center justify-center shrink-0">
@@ -86,7 +86,7 @@ export function NotificationsPanel() {
       >
         <Bell size={18} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-green-600 text-[10px] font-bold text-white flex items-center justify-center px-0.5">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-brand text-[10px] font-bold text-white flex items-center justify-center px-0.5">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
