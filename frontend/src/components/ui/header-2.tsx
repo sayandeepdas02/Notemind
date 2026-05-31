@@ -25,9 +25,13 @@ const NAV_LINKS = [
   { label: 'About',    href: '#faq'      },
 ];
 
+// Use 24px threshold so top-6 (24px) sticky is already satisfied when the
+// pill kicks in — avoids the element briefly losing its sticky anchor.
+const SCROLL_THRESHOLD = 30;
+
 export function Header() {
   const [open, setOpen] = React.useState(false);
-  const scrolled = useScroll(10);
+  const scrolled = useScroll(SCROLL_THRESHOLD);
 
   React.useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -35,25 +39,41 @@ export function Header() {
   }, [open]);
 
   return (
+    /*
+     * Outer <header>: sticky anchor + the visual pill that transitions.
+     *
+     * At top    → max-w-6xl, top-0, subtle border, full-height, rounded-2xl
+     * Scrolled  → max-w-4xl, top-6, glass blur, shorter height, tighter px
+     *
+     * transition-all at 600ms with a deceleration curve keeps it smooth
+     * and professional rather than snappy.
+     */
     <header
       className={cn(
-        // Always dark — readable over both the dark hero and the rest of the page.
-        // Without this base bg the header is transparent on bg-white and all white
-        // text becomes invisible at the top of the page.
-        'sticky top-0 z-50 mx-auto w-full bg-[#0d1520]',
-        'border-b border-white/[0.06] md:transition-all md:ease-out',
-        // Scrolled desktop: shrink into a floating glass pill
-        scrolled && !open && [
-          'bg-[#0d1520]/90 border-white/[0.08] backdrop-blur-lg',
-          'md:top-4 md:max-w-4xl md:rounded-2xl md:shadow-2xl',
-        ],
+        'sticky z-50 mx-auto w-full',
+        'bg-[#0d1520]',
+        'transition-all duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+        scrolled && !open
+          ? [
+              'top-6',
+              'max-w-4xl rounded-2xl',
+              'border border-white/[0.12]',
+              'bg-[#0d1520]/85 backdrop-blur-xl',
+              'shadow-[0_8px_40px_rgba(0,0,0,0.45)]',
+            ]
+          : [
+              'top-0',
+              'max-w-6xl rounded-2xl',
+              'border border-white/[0.07]',
+            ],
       )}
     >
-      {/* position:relative so absolute center-links anchor to the nav bar */}
+      {/* Nav bar */}
       <nav
         className={cn(
-          'relative flex h-[68px] w-full items-center justify-between px-6 lg:px-8 md:transition-all md:ease-out',
-          scrolled && !open && 'md:h-14 md:px-5',
+          'relative flex w-full items-center justify-between',
+          'transition-all duration-[600ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+          scrolled && !open ? 'h-14 px-5' : 'h-[68px] px-6',
         )}
       >
         {/* Logo + wordmark */}
@@ -62,7 +82,7 @@ export function Header() {
           <span className="font-serif text-white text-[22px] tracking-tight">Notemind</span>
         </Link>
 
-        {/* Desktop center links — absolute so they don't push CTAs off-center */}
+        {/* Desktop center links — absolute so they never push CTAs off-axis */}
         <div className="hidden md:flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           {NAV_LINKS.map(({ label, href }) => (
             <a
@@ -70,7 +90,7 @@ export function Header() {
               href={href}
               className={cn(
                 buttonVariants({ variant: 'ghost' }),
-                'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
+                'text-white/65 hover:text-white hover:bg-white/10 text-[14px]',
               )}
             >
               {label}
@@ -84,14 +104,14 @@ export function Header() {
             href="/auth"
             className={cn(
               buttonVariants({ variant: 'ghost' }),
-              'text-white/70 hover:text-white hover:bg-white/10 text-[14px]',
+              'text-white/65 hover:text-white hover:bg-white/10 text-[14px]',
             )}
           >
             Sign In
           </Link>
           <Link
             href="/auth"
-            className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-all shadow-sm"
+            className="flex items-center gap-1.5 bg-white hover:bg-white/90 text-[#0d1520] text-[14px] font-semibold px-5 py-2 rounded-full transition-colors shadow-sm"
           >
             Start for free
           </Link>
@@ -107,50 +127,50 @@ export function Header() {
         </button>
       </nav>
 
-      {/* Mobile drawer — rendered inside the sticky header so it inherits the
-          correct stacking context; uses min-h-screen so it always fills the
-          viewport regardless of the header's current top offset */}
+      {/* Mobile drawer — grid-rows trick for smooth height animation */}
       <div
         className={cn(
-          'border-t border-white/[0.08] bg-[#0d1520] md:hidden',
-          'transition-all duration-200 ease-out overflow-hidden',
-          open ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
+          'grid md:hidden',
+          'transition-all duration-[500ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
         )}
       >
-        <div className="flex min-h-[calc(100svh-68px)] flex-col justify-between p-6">
-          <div className="grid gap-y-1 mt-2">
-            {NAV_LINKS.map(({ label, href }) => (
-              <a
-                key={label}
-                href={href}
+        <div className="overflow-hidden">
+          <div className="border-t border-white/[0.08] flex flex-col justify-between gap-y-2 px-5 pb-6 pt-3">
+            <div className="grid gap-y-1">
+              {NAV_LINKS.map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    buttonVariants({ variant: 'ghost' }),
+                    'justify-start text-white/80 hover:text-white hover:bg-white/10 text-[17px] h-12',
+                  )}
+                >
+                  {label}
+                </a>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2.5 mt-4">
+              <Link
+                href="/auth"
                 onClick={() => setOpen(false)}
                 className={cn(
-                  buttonVariants({ variant: 'ghost' }),
-                  'justify-start text-white/80 hover:text-white hover:bg-white/10 text-[18px] h-12',
+                  buttonVariants({ variant: 'outline' }),
+                  'w-full border-white/20 text-white hover:bg-white/10 hover:text-white',
                 )}
               >
-                {label}
-              </a>
-            ))}
-          </div>
-          <div className="flex flex-col gap-3 pb-6">
-            <Link
-              href="/auth"
-              onClick={() => setOpen(false)}
-              className={cn(
-                buttonVariants({ variant: 'outline' }),
-                'w-full border-white/20 text-white hover:bg-white/10 hover:text-white',
-              )}
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/auth"
-              onClick={() => setOpen(false)}
-              className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]"
-            >
-              Start for free
-            </Link>
+                Sign In
+              </Link>
+              <Link
+                href="/auth"
+                onClick={() => setOpen(false)}
+                className="w-full text-center py-3 bg-white text-[#0d1520] rounded-full font-semibold text-[15px]"
+              >
+                Start for free
+              </Link>
+            </div>
           </div>
         </div>
       </div>
