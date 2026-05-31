@@ -8,10 +8,12 @@ import { Header } from '@/components/ui/header-2';
 import { NotemindMark } from '@/components/ui/notemind-mark';
 import {
   ArrowRight,
-  Brain, Search, Volume2,
+  Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   Plus, Minus,
 } from 'lucide-react';
+import { LiveTranscriptionShowcase } from '@/components/ui/LiveTranscriptionShowcase';
+import { AIMemoryShowcase } from '@/components/ui/AIMemoryShowcase';
 
 // ── Social icon SVGs (lucide-react v1.x dropped brand icons) ──
 
@@ -348,170 +350,62 @@ function FeaturesGrid() {
   );
 }
 
-// ── AI Chat Split ─────────────────────────────────────────────
+// ── Product Showcase — unified animated section ───────────────
 
-const CHAT_BUBBLES = [
-  { role: 'user', text: 'What did we decide about pricing in the board meeting last month?' },
-  { role: 'ai',   text: 'The team agreed to move to per-seat pricing at $18/user/mo, effective Q4. Marcus and Sara were assigned to update the pricing page.', source: 'Board Meeting · Sep 12' },
-  { role: 'user', text: 'Did Marcus complete that task?' },
-  { role: 'ai',   text: 'Yes — Marcus confirmed the pricing page was updated and live in the Design Review.', source: 'Design Review · Sep 19' },
-];
-
-function AIChatSplit() {
+function ProductShowcase() {
   return (
-    <section className="bg-off-white section-divider py-24 px-6 lg:px-12">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-        <div>
+    <section
+      className="py-24 px-6 lg:px-10 overflow-hidden"
+      style={{
+        background: 'linear-gradient(180deg, #060c18 0%, #070e1c 100%)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+      }}
+    >
+      <div className="max-w-6xl mx-auto">
+
+        {/* Section header */}
+        <div className="text-center mb-14">
           <RevealWrapper>
-            <SectionLabel text="AI Memory" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Your meetings,<br />finally searchable
+            <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-400">
+              <span className="w-4 h-px bg-blue-400/60" />
+              See it in action
+              <span className="w-4 h-px bg-blue-400/60" />
+            </span>
+            <h2 className="font-serif text-[44px] md:text-[56px] text-white mt-5 mb-4 leading-[1.08] tracking-tight">
+              From meeting<br />to memory, instantly
             </h2>
-            <p className="text-[16px] text-ink-3 leading-relaxed mb-8">
-              Ask any question across your entire meeting history. Notemind surfaces the exact moment
-              it was discussed, with full context and cited sources.
+            <p className="text-[16px] text-white/45 max-w-md mx-auto leading-relaxed">
+              Watch Notemind capture every word, extract decisions and actions,
+              and build searchable knowledge — automatically.
             </p>
-            <ul className="space-y-3.5">
-              <CheckItem text="Natural language search across all meetings" />
-              <CheckItem text="Cited answers with meeting name + timestamp" />
-              <CheckItem text="Cross-references decisions, action items, and people" />
-            </ul>
           </RevealWrapper>
         </div>
 
-        <RevealWrapper delay={0.15}>
-          <div className="rounded-2xl overflow-hidden" style={{
-            background: 'linear-gradient(135deg, rgba(28,128,242,0.10), rgba(13,31,45,0.85))',
-            padding: '1px',
-            boxShadow: '0 32px 80px rgba(13,31,45,0.28)',
-          }}>
-            <div className="bg-navy rounded-[14px] p-5" style={{ aspectRatio: '1.1/1' }}>
-              <div className="absolute-off top-0 right-0 w-60 h-60 rounded-full opacity-15 pointer-events-none"
-                style={{ background: 'radial-gradient(circle, #1C80F2, transparent 70%)', position: 'absolute' }} />
+        {/* Two showcase cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-              <div className="flex items-center gap-2 mb-5">
-                <div className="w-7 h-7 rounded-lg bg-brand flex items-center justify-center">
-                  <Brain size={13} className="text-white" />
-                </div>
-                <span className="text-white/75 text-[13px] font-medium">AI Memory</span>
-                <span className="ml-auto text-[10px] text-[#1C80F2] font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1C80F2] animate-pulse" />Online
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {CHAT_BUBBLES.map((b, i) => (
-                  <motion.div key={i}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 + i * 0.3, duration: 0.4 }}
-                    className={`flex ${b.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-[12px] leading-relaxed ${
-                      b.role === 'user' ? 'bg-white/10 text-white/75' : 'bg-brand/20 border border-brand/30 text-white/90'
-                    }`}>
-                      {b.text}
-                      {b.source && (
-                        <div className="mt-2 pt-1.5 border-t border-white/10">
-                          {/* Citation as a proper pill */}
-                          <span className="inline-flex items-center gap-1 bg-[#1C80F2]/15 border border-[#1C80F2]/25 text-white/80 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                            ↗ {b.source}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </RevealWrapper>
-      </div>
-    </section>
-  );
-}
-
-// ── Transcript Split ──────────────────────────────────────────
-
-function TranscriptSplit() {
-  const TRANSCRIPT_LINES = [
-    { speaker: 'Sarah', text: 'I think we should move the mobile timeline to Q1 next year.' },
-    { speaker: 'Marcus', text: 'Agreed — the API integration is the main blocker right now.' },
-    { speaker: 'You', text: 'Can we get an estimate on the API work by Friday?' },
-    { speaker: 'Marcus', text: 'Sure, I\'ll have a breakdown ready by end of week.', active: true },
-  ];
-  const SPEAKER_COLORS: Record<string, string> = { Sarah: 'bg-[#1C80F2]', Marcus: 'bg-[#0d1520]', You: 'bg-white/20' };
-  const KEYWORDS = new Set(['API', 'mobile', 'timeline', 'Friday']);
-
-  return (
-    <section className="bg-white py-24 px-6 lg:px-12">
-      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
-        {/* Visual */}
-        <RevealWrapper delay={0.1}>
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden" style={{ boxShadow: '0 24px 60px rgba(15,26,20,0.08)' }}>
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-off-white">
-              <span className="text-[13px] font-semibold text-ink">Q3 Product Review</span>
-              <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />Recording
+          {/* Live Transcription */}
+          <RevealWrapper>
+            <div className="mb-3.5 flex items-center gap-2">
+              <Volume2 size={12} className="text-white/28" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/28">
+                Live Transcription
               </span>
             </div>
-            <div className="px-5 py-3 bg-brand-pale border-b border-brand-light">
-              <p className="text-[11px] font-medium text-brand flex items-center gap-1.5">
-                <Brain size={11} />AI: Team reviewing mobile app timeline adjustments and API blockers…
-              </p>
-            </div>
-            <div className="p-5 space-y-5">
-              {TRANSCRIPT_LINES.map((line, i) => (
-                <div key={i} className="flex gap-3.5">
-                  {/* Larger speaker avatar — 30px */}
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0 ${SPEAKER_COLORS[line.speaker] ?? 'bg-ink-3'}`}>
-                    {line.speaker[0]}
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-ink-2 block mb-1">{line.speaker}</span>
-                    <p className="text-[13px] text-ink-3 leading-relaxed">
-                      {line.text.split(' ').map((word, wi) => {
-                        const clean = word.replace(/[.,?]/g, '');
-                        return KEYWORDS.has(clean) ? (
-                          <mark key={wi} className="bg-[#1C80F2]/12 text-[#1C80F2] rounded-md px-1.5 py-0.5 mx-0.5 not-italic font-medium text-[12px]">{word} </mark>
-                        ) : <span key={wi}>{word} </span>;
-                      })}
-                      {'active' in line && line.active && (
-                        <span className="inline-block w-0.5 h-3.5 bg-brand animate-blink ml-0.5 align-text-bottom" />
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </RevealWrapper>
-
-        {/* Text */}
-        <div>
-          <RevealWrapper>
-            <SectionLabel text="Live Transcription" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-5 leading-[1.08] tracking-tight">
-              Every word,<br /><em className="not-italic" style={{ color: '#1C80F2' }}>perfectly captured</em>
-            </h2>
-            <p className="text-[16px] text-ink-3 leading-relaxed mb-10">
-              Speaker-identified transcription in real-time. Our AI highlights key decisions and
-              action items as they happen, not after.
-            </p>
-            {/* Stats with dividers */}
-            <div className="flex items-stretch gap-0 border border-gray-200 rounded-2xl overflow-hidden">
-              {[
-                { stat: '30+', label: 'Languages' },
-                { stat: '98.4%', label: 'Accuracy' },
-                { stat: '<500ms', label: 'Latency' },
-              ].map((s, i) => (
-                <div key={s.stat} className={`flex-1 text-center py-5 px-3 ${i < 2 ? 'border-r border-gray-200' : ''}`}>
-                  <p className="font-serif text-[30px] text-brand leading-none">{s.stat}</p>
-                  <p className="text-[12px] text-ink-4 mt-1.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
+            <LiveTranscriptionShowcase />
           </RevealWrapper>
+
+          {/* AI Memory */}
+          <RevealWrapper delay={0.08}>
+            <div className="mb-3.5 flex items-center gap-2">
+              <Search size={12} className="text-white/28" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/28">
+                AI Memory
+              </span>
+            </div>
+            <AIMemoryShowcase />
+          </RevealWrapper>
+
         </div>
       </div>
     </section>
@@ -999,8 +893,7 @@ export default function LandingPage() {
       <LogoStrip />
       <DashboardPreview />
       <FeaturesGrid />
-      <AIChatSplit />
-      <TranscriptSplit />
+      <ProductShowcase />
       <HowItWorks />
       <Testimonials />
       <Pricing />
