@@ -282,30 +282,9 @@ function Hero() {
   );
 }
 
-// ── (LogoStrip removed — integrated into Hero above) ─────────
-
+// Logo strip is now integrated into the Hero section above.
+// This null component keeps the <LogoStrip /> call in LandingPage valid.
 function LogoStrip() { return null; }
-
-// ── Logo Strip — static, no marquee ──────────────────────────
-
-const LOGO_COMPANIES = ['Intercom', 'Linear', 'Notion', 'Vercel', 'Loom', 'Figma'];
-
-function LogoStrip() {
-  return (
-    <section className="bg-off-white section-divider py-10">
-      <p className="text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-5 mb-8">
-        Trusted by teams at
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 px-6 max-w-3xl mx-auto">
-        {LOGO_COMPANIES.map((name, i) => (
-          <span key={i} className="font-serif text-[20px] text-ink-5/60 tracking-tight select-none">
-            {name}
-          </span>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 // ── Dashboard Preview (mock UI) ───────────────────────────────
 
