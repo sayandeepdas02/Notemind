@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import {
   Brain, Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   TrendingUp, User, Building,
-  Plus, Minus,
+  Plus, Minus, Sparkles,
 } from 'lucide-react';
 import { TestimonialsColumn } from '@/components/ui/testimonials-columns';
 import type { Testimonial } from '@/components/ui/testimonials-columns';
@@ -237,510 +237,454 @@ function FeaturesGrid() {
             </p>
           </RevealWrapper>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {FEATURES_DATA.map((f, i) => <FeatureCard key={f.title} {...f} delay={i * 0.07} />)}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {FEATURES_DATA.map((feature, i) => (
+            <FeatureCard
+              key={i}
+              icon={feature.icon}
+              title={feature.title}
+              desc={feature.desc}
+              delay={i * 0.05}
+            />
+          ))}
         </div>
       </div>
     </section>
   );
 }
 
-// ── AI Memory — Knowledge Graph ───────────────────────────────
+// ── Animation 1: Forgotten to Permanent Memory ─────────────────
 
-function AIChatSplit() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+function ForgottenToMemoryAnimation() {
+  const [phase, setPhase] = useState<'scattered' | 'extracting' | 'organized'>('scattered');
 
-  const SOURCES = [
-    { icon: Users,      name: 'Weekly Sync',     meta: 'Mon · 9:00 AM',  bg: 'bg-brand'     },
-    { icon: TrendingUp, name: 'Sales Call',       meta: 'Yesterday · 3pm', bg: 'bg-ink'      },
-    { icon: User,       name: '1:1 with Manager', meta: 'Tue · 10:00 AM', bg: 'bg-brand-mid' },
-    { icon: Clock,      name: 'Sprint Planning',  meta: 'Mon · 2:00 PM',  bg: 'bg-ink-2'    },
-    { icon: Building,   name: 'Board Meeting',    meta: 'Last Wed · 1pm', bg: 'bg-ink-3'    },
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhase(prev => {
+        if (prev === 'scattered') return 'extracting';
+        if (prev === 'extracting') return 'organized';
+        return 'scattered';
+      });
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
+
+  const scatteredItems = [
+    { text: "Sarah: 'Delay mobile release to Q1'", x: -140, y: -70, rotation: -12, delay: 0 },
+    { text: "Decision: finalize price at $18", x: 160, y: -90, rotation: 8, delay: 0.2 },
+    { text: "Marcus: 'Complete specs by Friday'", x: -180, y: 70, rotation: 6, delay: 0.1 },
+    { text: "Due: June 5", x: 170, y: 80, rotation: -6, delay: 0.35 },
+    { text: "Attendees: Sarah, Marcus, PM", x: 20, y: 130, rotation: 12, delay: 0.15 },
+    { text: "blocker: db migration latency", x: -40, y: -140, rotation: -8, delay: 0.3 },
   ];
 
-  const INDEX_TAGS = ['Transcripts', 'Decisions', 'Actions', 'People', 'Summaries'];
-
   return (
-    <section className="bg-off-white section-divider py-24 px-6 lg:px-12 overflow-hidden">
-      <div className="max-w-6xl mx-auto">
+    <section className="bg-[#050b14] text-white py-24 px-6 lg:px-12 relative overflow-hidden">
+      {/* Background glowing effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand/10 rounded-full blur-[120px]" />
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-500/5 rounded-full blur-[100px]" />
+      </div>
 
-        {/* Header */}
-        <div className="text-center mb-14">
-          <RevealWrapper>
-            <SectionLabel text="AI Memory" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-4 leading-[1.08] tracking-tight">
-              Your meetings,<br />finally searchable
-            </h2>
-            <p className="text-[16px] text-ink-3 max-w-[460px] mx-auto leading-relaxed">
-              Every meeting becomes a node in your knowledge graph. Ask anything — get cited answers instantly.
-            </p>
-          </RevealWrapper>
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="text-center mb-14 max-w-2xl mx-auto">
+          <SectionLabel text="Transformation" />
+          <h2 className="font-serif text-[42px] md:text-[54px] text-white mt-5 mb-4 leading-[1.1] tracking-tight">
+            Meetings are normally forgotten.<br />
+            Notemind makes them permanent.
+          </h2>
+          <p className="text-[16px] text-white/50 leading-relaxed max-w-md mx-auto">
+            Floating conversations and disappearing details are automatically structured into a permanent searchable knowledge system.
+          </p>
         </div>
 
-        {/* 3-col knowledge graph */}
-        <div ref={ref} className="grid grid-cols-1 lg:grid-cols-[5fr_3fr_5fr] gap-6 lg:gap-5 items-center">
+        {/* Cinematic Canvas Container */}
+        <div className="h-[460px] w-full rounded-[32px] border border-white/10 bg-[#080f1a] relative overflow-hidden flex items-center justify-center shadow-2xl">
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]" />
 
-          {/* ── Left: Meeting sources ── */}
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5 mb-3 px-1">
-              Meeting Sources
-            </p>
-            <div className="space-y-2.5">
-              {SOURCES.map((src, i) => {
-                const Icon = src.icon;
-                return (
+          {/* Phase 1: Scattered & Dissolving */}
+          <AnimatePresence>
+            {phase === 'scattered' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {scatteredItems.map((item, idx) => (
                   <motion.div
-                    key={src.name}
-                    initial={{ opacity: 0, x: -16 }}
-                    animate={inView ? { opacity: 1, x: 0 } : {}}
-                    transition={{ delay: i * 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                    className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3"
-                    style={{ boxShadow: '0 2px 8px rgba(15,26,20,0.04)' }}
+                    key={idx}
+                    initial={{ opacity: 0, scale: 0.8, x: item.x, y: item.y, rotate: item.rotation }}
+                    animate={{ opacity: [0, 0.75, 0.45, 0], scale: [0.8, 1, 0.95, 0.7], x: item.x * 1.1, y: item.y * 1.1 }}
+                    exit={{ opacity: 0, scale: 0.6 }}
+                    transition={{ duration: 3.8, delay: item.delay, ease: "easeInOut" }}
+                    className="absolute bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-mono text-white/70 backdrop-blur-sm shadow-lg whitespace-nowrap"
                   >
-                    <div className={`w-7 h-7 rounded-lg ${src.bg} flex items-center justify-center shrink-0`}>
-                      <Icon size={13} className="text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium text-ink truncate">{src.name}</p>
-                      <p className="text-[11px] text-ink-5">{src.meta}</p>
-                    </div>
-                    {/* Animated data pulse */}
-                    <motion.div
-                      className="w-1.5 h-1.5 rounded-full bg-brand shrink-0"
-                      animate={inView ? { opacity: [0, 1, 1, 0], x: [0, 0, 6, 14] } : {}}
-                      transition={{
-                        delay: 1.2 + i * 0.22,
-                        duration: 1.5,
-                        repeat: Infinity,
-                        repeatDelay: 3.5 + i * 0.3,
-                        ease: 'easeInOut',
-                      }}
-                    />
+                    {item.text}
                   </motion.div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Center: Memory node ── */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.82 }}
-            animate={inView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ delay: 0.55, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-col items-center gap-5"
-          >
-            {/* Pulsing orb */}
-            <div className="relative flex items-center justify-center w-32 h-32">
-              <motion.div
-                className="absolute inset-0 rounded-full border border-brand/20"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-              />
-              <motion.div
-                className="absolute inset-[10px] rounded-full border border-brand/30"
-                animate={{ scale: [1, 1.12, 1], opacity: [0.8, 0.1, 0.8] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-              />
-              <div
-                className="relative w-[68px] h-[68px] rounded-full bg-navy flex items-center justify-center"
-                style={{
-                  boxShadow:
-                    '0 0 0 1px rgba(28,128,242,0.38), 0 0 44px rgba(28,128,242,0.28), 0 8px 32px rgba(13,31,45,0.55)',
-                }}
-              >
-                <Brain size={28} className="text-white" />
-              </div>
-            </div>
-
-            <div className="text-center">
-              <p className="text-[14px] font-semibold text-ink tracking-tight">Notemind Memory</p>
-              <p className="text-[11px] text-ink-5 mt-0.5">Unified knowledge layer</p>
-            </div>
-
-            {/* Index tags */}
-            <div className="flex flex-wrap justify-center gap-1.5 max-w-[190px]">
-              {INDEX_TAGS.map((tag, i) => (
-                <motion.span
-                  key={tag}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: 0.9 + i * 0.08 }}
-                  className="text-[10px] font-semibold text-brand bg-brand-light border border-brand/15 px-2 py-0.5 rounded-full"
-                >
-                  {tag}
-                </motion.span>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* ── Right: Chat panel ── */}
-          <motion.div
-            initial={{ opacity: 0, x: 18 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ delay: 0.65, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl overflow-hidden bg-navy"
-            style={{
-              boxShadow:
-                '0 0 0 1px rgba(28,128,242,0.2), 0 24px 64px rgba(13,31,45,0.4)',
-            }}
-          >
-            {/* Chat header */}
-            <div className="flex items-center gap-2.5 px-4 py-3.5 border-b border-white/[0.07]">
-              <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center shrink-0">
-                <Brain size={12} className="text-white" />
-              </div>
-              <span className="text-[13px] font-medium text-white/80">AI Memory</span>
-              <span className="ml-auto flex items-center gap-1 text-[10px] text-brand font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />Online
-              </span>
-            </div>
-
-            {/* Messages */}
-            <div className="p-4 space-y-3">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 1.0 }}
-                className="flex justify-end"
-              >
-                <div className="bg-white/10 rounded-xl rounded-br-sm px-3.5 py-2.5 max-w-[90%]">
-                  <p className="text-[12px] text-white/80 leading-relaxed">
-                    What did my manager ask me to finish this week?
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={inView ? { opacity: 1, y: 0 } : {}}
-                transition={{ delay: 1.4 }}
-                className="flex justify-start"
-              >
-                <div className="bg-brand/20 border border-brand/25 rounded-xl rounded-bl-sm px-3.5 py-3 max-w-[96%]">
-                  <p className="text-[12px] text-white/65 mb-2.5 leading-relaxed">
-                    From your{' '}
-                    <span className="text-white font-semibold">1:1 with Manager</span> (Tue):
-                  </p>
-                  <div className="space-y-2 mb-3">
-                    {[
-                      { task: 'Complete API integration spec', due: 'Due Fri' },
-                      { task: 'Review Q3 roadmap draft',       due: 'Due Thu' },
-                      { task: 'Update mobile timeline',        due: 'Sprint Planning' },
-                    ].map((item, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={inView ? { opacity: 1, x: 0 } : {}}
-                        transition={{ delay: 1.6 + i * 0.15 }}
-                        className="flex items-start gap-2"
-                      >
-                        <span className="text-brand text-[11px] mt-0.5 shrink-0 font-bold">→</span>
-                        <span className="text-[12px] leading-snug">
-                          <span className="text-white/85 font-medium">{item.task}</span>
-                          <span className="text-white/40 ml-1.5 text-[11px]">{item.due}</span>
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                  <div className="pt-2.5 border-t border-white/10 flex flex-wrap gap-1.5">
-                    {['1:1 Manager · Tue', 'Sprint Planning · Mon'].map((src) => (
-                      <span
-                        key={src}
-                        className="inline-flex items-center gap-1 bg-brand/15 border border-brand/20 text-white/60 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                      >
-                        ↗ {src}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Input bar */}
-            <div className="px-4 pb-4">
-              <div className="flex items-center gap-2 bg-white/[0.06] border border-white/[0.09] rounded-xl px-3.5 py-2.5">
-                <span className="text-[13px] text-white/25 flex-1">Ask about any meeting…</span>
-                <ChevronRight size={13} className="text-brand/70 shrink-0" />
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Live Transcription — 4-stage process flow ─────────────────
-
-function FlowArrow({ inView, delay }: { inView: boolean; delay: number }) {
-  return (
-    <div className="hidden lg:flex items-center justify-center px-1">
-      <motion.div
-        initial={{ opacity: 0, scaleX: 0 }}
-        animate={inView ? { opacity: 1, scaleX: 1 } : {}}
-        transition={{ delay, duration: 0.3, ease: 'easeOut' }}
-        className="flex items-center origin-left"
-      >
-        <div className="w-5 h-px bg-gradient-to-r from-brand/20 to-brand/50" />
-        <ChevronRight size={13} className="text-brand/60 -ml-0.5 shrink-0" />
-      </motion.div>
-    </div>
-  );
-}
-
-function StageCard({
-  children, inView, delay, num, title,
-}: {
-  children: React.ReactNode;
-  inView: boolean;
-  delay: number;
-  num: number;
-  title: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="bg-white border border-gray-200 rounded-2xl overflow-hidden"
-      style={{ boxShadow: '0 4px 20px rgba(15,26,20,0.06)' }}
-    >
-      <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-center gap-2">
-        <span className="w-5 h-5 rounded-full bg-brand/10 border border-brand/20 flex items-center justify-center text-brand font-bold text-[10px] shrink-0">
-          {num}
-        </span>
-        <p className="text-[11px] font-semibold text-ink uppercase tracking-[0.1em]">{title}</p>
-      </div>
-      <div className="p-5">{children}</div>
-    </motion.div>
-  );
-}
-
-function TranscriptSplit() {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
-
-  const sd = (n: number) => n * 0.35; // stage base delay
-
-  const STREAM = [
-    { initials: 'S', col: 'bg-brand', speaker: 'Sarah',  text: 'Move the mobile timeline to Q1.', tag: 'Decision'    },
-    { initials: 'M', col: 'bg-ink',   speaker: 'Marcus', text: 'API integration is the main blocker.', tag: null      },
-    { initials: 'Y', col: 'bg-ink-3', speaker: 'You',    text: 'Estimate on the API work by Friday?', tag: 'Action'   },
-    { initials: 'M', col: 'bg-ink',   speaker: 'Marcus', text: 'Breakdown ready by end of week.',   tag: null, cur: true },
-  ];
-
-  const CHECKLIST = [
-    { label: 'Detecting decisions',     done: true  },
-    { label: 'Extracting action items', done: true  },
-    { label: 'Identifying owners',      done: true  },
-    { label: 'Generating summary',      done: false },
-  ];
-
-  const OUTPUT = [
-    { label: 'Summary generated',        sub: '"Team agreed to delay mobile to Q1…"' },
-    { label: '3 action items assigned',  sub: 'Marcus · Sarah · You'                  },
-    { label: 'Saved to workspace',       sub: 'Searchable · Indexed · Shared'         },
-  ];
-
-  return (
-    <section className="bg-white section-divider py-24 px-4 lg:px-8 overflow-hidden">
-      <div className="max-w-7xl mx-auto">
-
-        {/* Header */}
-        <div className="text-center mb-14">
-          <RevealWrapper>
-            <SectionLabel text="Live Transcription" />
-            <h2 className="font-serif text-[44px] md:text-[56px] text-ink mt-5 mb-4 leading-[1.08] tracking-tight">
-              Every word,{' '}
-              <em className="not-italic text-brand">perfectly captured</em>
-            </h2>
-            <p className="text-[16px] text-ink-3 max-w-[460px] mx-auto leading-relaxed">
-              Watch a live meeting transform into structured intelligence — in real time.
-            </p>
-          </RevealWrapper>
-        </div>
-
-        {/* 4-stage flow */}
-        <div
-          ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] gap-4 lg:gap-0 items-start"
-        >
-
-          {/* Stage 1 — Meeting in Progress */}
-          <StageCard inView={inView} delay={sd(0)} num={1} title="Meeting in Progress">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 text-[11px] font-bold text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />REC
-                </span>
-                <span className="text-[11px] text-ink-5">Q3 Product Review</span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {[
-                  { i: 'S', c: 'bg-brand', pulse: true  },
-                  { i: 'M', c: 'bg-ink',   pulse: false },
-                  { i: 'J', c: 'bg-ink-3', pulse: false },
-                  { i: 'L', c: 'bg-ink-4', pulse: false },
-                ].map(({ i, c, pulse }) => (
-                  <div key={i} className="relative shrink-0">
-                    <div className={`w-8 h-8 rounded-full ${c} flex items-center justify-center text-white text-[11px] font-bold`}>{i}</div>
-                    {pulse && <span className="absolute inset-0 rounded-full border-2 border-brand animate-ping opacity-60" />}
-                  </div>
                 ))}
-                <span className="text-[11px] text-ink-5">4 participants</span>
-              </div>
-              {/* Audio waveform */}
-              <div className="flex items-center gap-2 bg-brand-pale rounded-xl px-3 py-2.5 border border-brand-light">
-                <span className="flex gap-[3px] items-end h-4 shrink-0">
-                  {[3, 5, 4, 7, 3, 5, 4].map((h, idx) => (
-                    <motion.span
-                      key={idx}
-                      className="w-[3px] rounded-full bg-brand inline-block"
-                      animate={{ height: [`${h}px`, `${h + 4}px`, `${h}px`] }}
-                      transition={{ duration: 0.5 + idx * 0.04, delay: idx * 0.08, repeat: Infinity, ease: 'easeInOut' }}
-                      style={{ height: `${h}px` }}
-                    />
-                  ))}
-                </span>
-                <span className="text-[12px] text-brand font-medium">Sarah is speaking…</span>
-              </div>
-            </div>
-          </StageCard>
-
-          <FlowArrow inView={inView} delay={sd(0) + 0.25} />
-
-          {/* Stage 2 — Live Transcript */}
-          <StageCard inView={inView} delay={sd(1)} num={2} title="Live Transcript">
-            <div className="space-y-3">
-              {STREAM.map((line, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={inView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: sd(1) + 0.2 + i * 0.22, duration: 0.35 }}
-                  className="flex gap-2.5"
+                
+                {/* Core engine in a dormant standby pulse state */}
+                <motion.div 
+                  className="w-20 h-20 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"
+                  animate={{ scale: [0.96, 1.04, 0.96], opacity: [0.3, 0.6, 0.3] }}
+                  transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <div className={`w-6 h-6 rounded-full ${line.col} flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-0.5`}>
-                    {line.initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-semibold text-ink-5 mb-0.5">{line.speaker}</p>
-                    <p className="text-[12px] text-ink-3 leading-relaxed">
-                      {line.text}
-                      {line.cur && <span className="inline-block w-0.5 h-3 bg-brand animate-blink ml-0.5 align-text-bottom" />}
-                    </p>
-                    {line.tag && (
-                      <span className="mt-1 inline-flex text-[10px] font-semibold text-brand bg-brand-light px-2 py-0.5 rounded-full">
-                        {line.tag}
-                      </span>
-                    )}
-                  </div>
+                  <Brain size={24} className="text-white/30" />
                 </motion.div>
-              ))}
-            </div>
-          </StageCard>
 
-          <FlowArrow inView={inView} delay={sd(1) + 0.25} />
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-white/30 uppercase">
+                  Phase 1 · scattered discussions fading away
+                </p>
+              </div>
+            )}
+          </AnimatePresence>
 
-          {/* Stage 3 — AI Processing */}
-          <StageCard inView={inView} delay={sd(2)} num={3} title="AI Processing">
-            <div className="space-y-3">
-              {CHECKLIST.map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={inView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ delay: sd(2) + 0.2 + i * 0.28, duration: 0.35 }}
-                  className="flex items-center gap-2.5"
-                >
+          {/* Phase 2: Automated Extraction (sucking into the core) */}
+          <AnimatePresence>
+            {phase === 'extracting' && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {scatteredItems.map((item, idx) => (
                   <motion.div
-                    initial={{ scale: 0 }}
-                    animate={inView ? { scale: 1 } : {}}
-                    transition={{ delay: sd(2) + 0.35 + i * 0.28, type: 'spring', stiffness: 320, damping: 20 }}
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                      item.done ? 'bg-brand' : 'border-2 border-brand/40'
-                    }`}
+                    key={idx}
+                    initial={{ opacity: 0.6, scale: 0.9, x: item.x * 1.2, y: item.y * 1.2 }}
+                    animate={{ 
+                      opacity: [0.6, 1, 0], 
+                      scale: [0.9, 0.75, 0], 
+                      x: 0, 
+                      y: 0 
+                    }}
+                    transition={{ duration: 1.8, delay: idx * 0.12, ease: [0.25, 1, 0.5, 1] }}
+                    className="absolute bg-brand/10 border border-brand/40 px-3.5 py-2 rounded-full text-[11px] font-mono text-brand-mid backdrop-blur-sm whitespace-nowrap"
                   >
-                    {item.done
-                      ? <Check size={10} className="text-white" strokeWidth={2.5} />
-                      : (
-                        <motion.span
-                          animate={{ opacity: [1, 0.2, 1] }}
-                          transition={{ duration: 0.75, repeat: Infinity }}
-                          className="w-1.5 h-1.5 rounded-full bg-brand/60"
-                        />
-                      )
-                    }
+                    {item.text.replace(/['"]+/g, '')}
                   </motion.div>
-                  <span className={`text-[12px] font-medium ${item.done ? 'text-ink-2' : 'text-brand'}`}>
-                    {item.label}{!item.done && '…'}
-                  </span>
-                </motion.div>
-              ))}
-              {/* Progress bar */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity: 1 } : {}}
-                transition={{ delay: sd(2) + 1.1 }}
-                className="pt-1"
-              >
-                <div className="flex justify-between text-[10px] text-ink-5 mb-1.5">
-                  <span>Processing</span><span>75%</span>
-                </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                ))}
+
+                {/* Pulsing Concentric Synthesis Engine */}
+                <div className="relative flex items-center justify-center w-40 h-40">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-brand to-brand-mid rounded-full"
-                    initial={{ width: '0%' }}
-                    animate={inView ? { width: '75%' } : {}}
-                    transition={{ delay: sd(2) + 1.3, duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0 rounded-full border-2 border-brand/30"
+                    animate={{ scale: [0.6, 1.3, 0.6], opacity: [0.8, 0, 0.8] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                   />
+                  <motion.div
+                    className="absolute inset-6 rounded-full border border-purple-500/30"
+                    animate={{ scale: [1, 0.7, 1], opacity: [0.2, 0.9, 0.2] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <div
+                    className="relative w-16 h-16 rounded-full bg-[#0d1520] border border-brand/40 flex items-center justify-center shadow-[0_0_32px_rgba(28,128,242,0.3)]"
+                  >
+                    <Brain size={24} className="text-brand animate-pulse" />
+                  </div>
                 </div>
-              </motion.div>
-            </div>
-          </StageCard>
 
-          <FlowArrow inView={inView} delay={sd(2) + 0.25} />
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-brand-mid uppercase">
+                  Phase 2 · Structuring verbal streams into memory
+                </p>
+              </div>
+            )}
+          </AnimatePresence>
 
-          {/* Stage 4 — Final Output */}
-          <StageCard inView={inView} delay={sd(3)} num={4} title="Final Output">
-            <div className="space-y-4">
-              {OUTPUT.map((item, i) => (
-                <motion.div
-                  key={item.label}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={inView ? { opacity: 1, y: 0 } : {}}
-                  transition={{ delay: sd(3) + 0.2 + i * 0.2, duration: 0.4 }}
-                  className="flex gap-3"
+          {/* Phase 3: Structured Knowledge Base showing accumulated value */}
+          <AnimatePresence>
+            {phase === 'organized' && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.8 }}
+                className="absolute inset-0 flex flex-col items-center justify-center p-6"
+              >
+                {/* Search bar simulation */}
+                <motion.div 
+                  initial={{ y: -20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="w-full max-w-md bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 flex items-center gap-3.5 mb-8 shadow-inner"
                 >
-                  <div className="w-5 h-5 rounded-full bg-brand flex items-center justify-center shrink-0 mt-0.5">
-                    <Check size={10} className="text-white" strokeWidth={2.5} />
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-semibold text-ink">{item.label}</p>
-                    <p className="text-[11px] text-ink-4 mt-0.5 leading-relaxed">{item.sub}</p>
-                  </div>
+                  <Search size={14} className="text-brand-mid shrink-0" />
+                  <span className="text-[13px] text-white/80 font-mono">pricing decisions...</span>
+                  <span className="ml-auto text-[10px] text-white/35 font-mono">Permanent Index</span>
                 </motion.div>
-              ))}
-            </div>
-          </StageCard>
+
+                {/* Structured Value Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-3xl">
+                  {[
+                    { title: "Decisions", desc: "✓ FINALIZED: subscription pricing set at $18 per month.", color: "border-brand-mid/30 bg-brand/5 text-brand-mid", delay: 0.4 },
+                    { title: "Action Items", desc: "☐ Marcus: build out API integration spec by Friday.", color: "border-purple-500/30 bg-purple-500/5 text-purple-400", delay: 0.55 },
+                    { title: "Transcripts", desc: "Sarah: 'Let's move mobile launch timeline to Q1.'", color: "border-emerald-500/30 bg-emerald-500/5 text-emerald-400", delay: 0.7 },
+                  ].map((card, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 24, scale: 0.94 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ delay: card.delay, type: 'spring', stiffness: 260, damping: 22 }}
+                      className={cn(
+                        "p-4 rounded-xl border flex flex-col gap-2 relative overflow-hidden group shadow-lg",
+                        card.color
+                      )}
+                    >
+                      <span className="text-[10px] uppercase font-bold tracking-widest opacity-60">{card.title}</span>
+                      <p className="text-[12.5px] font-medium leading-relaxed text-white/90">{card.desc}</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-emerald-400 uppercase">
+                  Phase 3 · Accumulating high-value searchable history
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Animation 2: Meeting History & Second Brain ───────────────
+
+function MeetingHistorySecondBrainAnimation() {
+  const [phase, setPhase] = useState<'compressing' | 'asking' | 'synthesizing' | 'answered'>('compressing');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPhase(prev => {
+        if (prev === 'compressing') return 'asking';
+        if (prev === 'asking') return 'synthesizing';
+        if (prev === 'synthesizing') return 'answered';
+        return 'compressing';
+      });
+    }, 5500);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Generate 80 nodes representing meetings
+  const meetingNodes = Array.from({ length: 80 }).map((_, i) => {
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 90 + Math.random() * 200;
+    return {
+      id: i,
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+      size: 3 + Math.random() * 4,
+      opacity: 0.15 + Math.random() * 0.4,
+      isSource: i % 15 === 0
+    };
+  });
+
+  return (
+    <section className="bg-[#050b14] text-white py-24 px-6 lg:px-12 relative overflow-hidden section-divider">
+      {/* Background glowing effects */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-purple-500/10 rounded-full blur-[140px]" />
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="text-center mb-14 max-w-2xl mx-auto">
+          <SectionLabel text="The Second Brain" />
+          <h2 className="font-serif text-[42px] md:text-[54px] text-white mt-5 mb-4 leading-[1.1] tracking-tight">
+            Your entire meeting history,<br />
+            becomes an AI-powered second brain.
+          </h2>
+          <p className="text-[16px] text-white/50 leading-relaxed max-w-md mx-auto">
+            Compress months of discussions. Ask a question, and receive cited answers instantly.
+          </p>
         </div>
 
-        {/* Stats strip */}
-        <RevealWrapper delay={0.5}>
-          <div className="flex items-stretch border border-gray-200 rounded-2xl overflow-hidden mt-14 max-w-sm mx-auto">
-            {[
-              { stat: '30+',   label: 'Languages' },
-              { stat: '98.4%', label: 'Accuracy'  },
-              { stat: '<500ms',label: 'Latency'   },
-            ].map((stat, i) => (
-              <div key={stat.stat} className={`flex-1 text-center py-5 ${i < 2 ? 'border-r border-gray-200' : ''}`}>
-                <p className="font-serif text-[30px] text-brand leading-none">{stat.stat}</p>
-                <p className="text-[12px] text-ink-4 mt-1.5">{stat.label}</p>
-              </div>
+        {/* Cinematic Canvas Container */}
+        <div className="h-[460px] w-full rounded-[32px] border border-white/10 bg-[#080f1a] relative overflow-hidden flex items-center justify-center shadow-2xl">
+          {/* Subtle grid pattern background */}
+          <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff10_1px,transparent_1px),linear-gradient(to_bottom,#ffffff10_1px,transparent_1px)] bg-[size:24px_24px]" />
+
+          {/* BACKGROUND MEETING CLUSTER (constant backdrop, pulsing slightly) */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {meetingNodes.map(node => (
+              <motion.div
+                key={node.id}
+                initial={{ opacity: node.opacity, x: node.x, y: node.y }}
+                animate={{
+                  x: phase === 'compressing' ? node.x * 0.1 : node.x,
+                  y: phase === 'compressing' ? node.y * 0.1 : node.y,
+                  opacity: phase === 'compressing' 
+                    ? [node.opacity, 0.8, 0] 
+                    : (phase === 'synthesizing' && node.isSource) 
+                      ? [node.opacity, 1, node.opacity] 
+                      : node.opacity,
+                  scale: (phase === 'synthesizing' && node.isSource) ? [1, 1.8, 1] : 1,
+                  backgroundColor: (phase === 'synthesizing' && node.isSource) ? '#1C80F2' : '#ffffff'
+                }}
+                transition={{ duration: phase === 'compressing' ? 2 : 1.2, ease: "easeInOut" }}
+                className={cn(
+                  "absolute rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]",
+                  node.isSource && "shadow-[0_0_12px_rgba(28,128,242,0.4)]"
+                )}
+                style={{
+                  width: node.size,
+                  height: node.size,
+                }}
+              />
             ))}
           </div>
-        </RevealWrapper>
+
+          {/* Central Concentric Brain Orb (The second brain core) */}
+          <div className="relative flex items-center justify-center w-40 h-40">
+            <motion.div
+              className="absolute inset-0 rounded-full border border-brand/20 bg-brand/5"
+              animate={{ 
+                scale: phase === 'synthesizing' ? [1, 1.15, 1] : [1, 1.05, 1],
+                opacity: phase === 'synthesizing' ? 0.8 : 0.4 
+              }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <motion.div
+              className="absolute inset-4 rounded-full border border-purple-500/20 bg-purple-500/5"
+              animate={{ 
+                scale: phase === 'synthesizing' ? [1, 0.9, 1] : [1, 0.95, 1],
+                opacity: phase === 'synthesizing' ? 0.9 : 0.3 
+              }}
+              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+            />
+            <div
+              className="relative w-16 h-16 rounded-full bg-[#090f19] border border-brand/40 flex items-center justify-center shadow-xl"
+              style={{
+                boxShadow: phase === 'synthesizing' 
+                  ? '0 0 40px rgba(28,128,242,0.4), inset 0 0 16px rgba(28,128,242,0.3)' 
+                  : 'none'
+              }}
+            >
+              <Brain size={24} className={cn("transition-colors duration-500", phase === 'synthesizing' ? "text-brand" : "text-white/40")} />
+            </div>
+          </div>
+
+          {/* PHASES OVERLAYS */}
+
+          {/* Phase 1: Compressing hundreds of meetings */}
+          <AnimatePresence>
+            {phase === 'compressing' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-white/35 uppercase">
+                  Step 1 · compressing 100+ past meetings into memory core
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Phase 2: Natural Query Input */}
+          <AnimatePresence>
+            {phase === 'asking' && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                className="absolute inset-x-6 bottom-14 flex flex-col items-center justify-center text-center"
+              >
+                <div className="bg-[#0b1424] border border-white/10 rounded-2xl p-4 max-w-md w-full shadow-2xl flex items-center gap-3">
+                  <div className="w-5 h-5 rounded bg-brand/20 flex items-center justify-center shrink-0">
+                    <Sparkles size={11} className="text-brand-mid" />
+                  </div>
+                  <motion.p 
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 1.8, ease: "easeOut" }}
+                    className="text-[13px] font-semibold text-white/90 text-left overflow-hidden whitespace-nowrap border-r border-brand/50 pr-1"
+                  >
+                    What were our main blockers for the Apollo release?
+                  </motion.p>
+                </div>
+
+                <p className="absolute -bottom-8 text-[11px] font-mono tracking-widest text-brand-mid uppercase">
+                  Step 2 · User queries the organizational memory
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Phase 3: Synthesizing & Vector Scanning */}
+          <AnimatePresence>
+            {phase === 'synthesizing' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                {/* SVG Scanning beams */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                  {meetingNodes.filter(n=>n.isSource).map((node, i) => (
+                    <motion.line
+                      key={i}
+                      x1="50%"
+                      y1="50%"
+                      x2={`calc(50% + ${node.x}px)`}
+                      y2={`calc(50% + ${node.y}px)`}
+                      stroke="url(#beam-gradient)"
+                      strokeWidth="1.5"
+                      initial={{ strokeDasharray: "100, 100", strokeDashoffset: 100 }}
+                      animate={{ strokeDashoffset: [100, 0] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                    />
+                  ))}
+                  <defs>
+                    <linearGradient id="beam-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1C80F2" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#1C80F2" stopOpacity="0.1" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-brand uppercase">
+                  Step 3 · scanning vector embeddings & cross-referencing nodes
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Phase 4: Synthesized Answer with Cited Source chips */}
+          <AnimatePresence>
+            {phase === 'answered' && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="absolute inset-6 flex flex-col items-center justify-center"
+              >
+                <div className="bg-[#0b1424] border border-white/10 rounded-2xl p-5 max-w-xl w-full shadow-2xl space-y-3.5 animate-float-up text-left">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-brand-light flex items-center justify-center shrink-0">
+                      <Check size={11} className="text-brand" />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-brand">Synthesized Answer</span>
+                  </div>
+                  
+                  <p className="text-[13.5px] font-medium leading-relaxed text-white/90">
+                    The Apollo release was primarily blocked by <span className="text-brand-mid font-semibold">database migration latency issues</span> discussed in March, and <span className="text-brand-mid font-semibold">unresolved UI specs</span> from the Figma review.
+                  </p>
+
+                  <div className="pt-3 border-t border-white/[0.08] flex items-center gap-2 flex-wrap">
+                    <span className="text-[9.5px] font-bold text-white/40 uppercase tracking-widest">Sources:</span>
+                    <span className="px-2 py-0.5 rounded-full bg-brand/10 border border-brand/20 text-[10px] font-semibold text-brand-mid">
+                      ↗ Apollo Kickoff (Mar 12)
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-[10px] font-semibold text-purple-400">
+                      ↗ Figma UI Review (Apr 5)
+                    </span>
+                  </div>
+                </div>
+
+                <p className="absolute bottom-6 text-[11px] font-mono tracking-widest text-emerald-400 uppercase">
+                  Step 4 · Cited answers synthesized across history
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </div>
       </div>
     </section>
   );
@@ -819,7 +763,6 @@ function Pricing() {
                 className={`px-5 py-2 rounded-full text-[13px] font-medium transition-all flex items-center gap-2 ${annual ? 'bg-ink text-white shadow-sm' : 'text-ink-3 hover:text-ink'}`}
               >
                 Annual
-                {/* More prominent savings badge */}
                 <span className="text-[11px] font-bold text-white bg-brand px-2 py-0.5 rounded-full">−20%</span>
               </button>
             </div>
@@ -927,7 +870,6 @@ function FAQ() {
         <RevealWrapper>
           <div className="text-center mb-12">
             <SectionLabel text="FAQ" />
-            {/* No trailing period — consistent with other H2s */}
             <h2 className="font-serif text-[40px] md:text-[48px] text-ink mt-5 leading-tight tracking-tight">
               Common questions
             </h2>
@@ -944,7 +886,6 @@ function FAQ() {
                   aria-expanded={open === i}
                 >
                   <span className="text-[15px] font-medium text-ink pr-4">{faq.q}</span>
-                  {/* Larger, bolder expand icon */}
                   <div className="shrink-0 w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-ink-3">
                     {open === i ? <Minus size={14} strokeWidth={2.5} /> : <Plus size={14} strokeWidth={2.5} />}
                   </div>
@@ -973,7 +914,7 @@ function FAQ() {
   );
 }
 
-// ── CTA Section — Kernel "Get Started" style ─────────────────
+// ── CTA Section ───────────────────────────────────────────────
 
 function CTASection() {
   return (
@@ -999,23 +940,19 @@ function CTASection() {
             />
 
             <div className="relative z-10 max-w-lg mx-auto">
-              {/* Eyebrow */}
               <p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-white/45 mb-5">
                 Get Started
               </p>
 
-              {/* Headline */}
               <h2 className="font-serif text-[42px] md:text-[54px] text-white leading-[1.05] tracking-tight mb-4">
                 Start Automating<br />Your Workflows Today
               </h2>
 
-              {/* Description */}
               <p className="text-[15px] font-light text-white/50 leading-relaxed mb-9 max-w-[360px] mx-auto">
                 Join teams using Notemind to capture every meeting, eliminate manual notes,
                 and act faster with AI.
               </p>
 
-              {/* Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a
                   href="#how"
@@ -1090,7 +1027,6 @@ function Footer() {
               Notemind helps teams capture every meeting, manage action items, and
               build AI-powered workflows that scale.
             </p>
-            {/* Social icons — bare, no circle border */}
             <div className="flex items-center gap-4">
               <a href="https://twitter.com" aria-label="Twitter / X"
                 className="text-white/50 hover:text-white transition-colors">
@@ -1165,7 +1101,7 @@ function Footer() {
         </div>
       </div>
 
-      {/* Giant watermark — full word visible, sits below the bottom bar */}
+      {/* Giant watermark */}
       <div className="relative z-10 flex justify-center select-none pointer-events-none pb-6">
         <span
           className="font-serif whitespace-nowrap leading-none"
@@ -1192,8 +1128,8 @@ export default function LandingPage() {
       <Features />
       <LogoStrip />
       <FeaturesGrid />
-      <AIChatSplit />
-      <TranscriptSplit />
+      <ForgottenToMemoryAnimation />
+      <MeetingHistorySecondBrainAnimation />
       <Testimonials />
       <Pricing />
       <FAQ />
