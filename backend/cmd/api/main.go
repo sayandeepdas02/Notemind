@@ -227,6 +227,11 @@ func main() {
 	r.GET("/auth/google/callback", authHandler.GoogleOAuthCallback)
 	// Dev-only fake login (blocked in production by handler guard)
 	r.POST("/auth/google", authHandler.GoogleLogin)
+	// Email magic-link / OTP flow
+	r.POST("/auth/email", authHandler.SendEmailAuth)
+
+	// User profile
+	r.GET("/users/me", auth.Middleware(), authHandler.GetCurrentUser)
 
 	// Google Calendar OAuth
 	r.GET("/auth/google-calendar", auth.Middleware(), calHandler.InitiateOAuth)

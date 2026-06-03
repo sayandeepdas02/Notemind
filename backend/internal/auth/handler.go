@@ -125,6 +125,44 @@ func (h *Handler) GoogleOAuthCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token))
 }
 
+// GetCurrentUser returns the authenticated user's profile.
+// GET /users/me
+func (h *Handler) GetCurrentUser(c *gin.Context) {
+	userID := c.GetString("user_id")
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// SendEmailAuth is a placeholder for the magic-link / OTP email auth flow.
+// POST /auth/email
+func (h *Handler) SendEmailAuth(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required"`
+		Name  string `json:"name"`
+		Mode  string `json:"mode"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "email is required"})
+		return
+	}
+
+	if h.cfg.ResendAPIKey == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Email sign-in is not configured. Please use Google sign-in.",
+		})
+		return
+	}
+
+	// TODO: generate OTP / magic-link, persist in Redis, send via Resend
+	c.JSON(http.StatusNotImplemented, gin.H{
+		"error": "Email sign-in is coming soon. Please use Google sign-in for now.",
+	})
+}
+
 // ── Dev-only: fake email login ────────────────────────────────────────────────
 
 // GoogleLogin handles the fake email-based login.
