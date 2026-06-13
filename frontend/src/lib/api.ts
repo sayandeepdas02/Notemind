@@ -137,10 +137,11 @@ export const api = {
 
 // ── SSE Connection Helper ─────────────────────────────────────
 
-export function createSSEConnection(meetingId: string): EventSource {
-  const token = getToken();
-  const url = `${API_BASE_URL}/meetings/${meetingId}/stream${token ? `?token=${token}` : ''}`;
-  return new EventSource(url);
+// Fetches a short-lived, single-use stream token from the backend, then opens
+// the EventSource with ?stream_token=. The long-lived JWT never appears in the URL.
+export async function createSSEConnection(meetingId: string): Promise<EventSource> {
+  const { stream_token } = await fetchWithAuth<{ stream_token: string }>('/auth/stream-token', { method: 'POST' });
+  return new EventSource(`${API_BASE_URL}/meetings/${meetingId}/stream?stream_token=${stream_token}`);
 }
 
 // ── AI Memory SSE Streaming ───────────────────────────────────
@@ -168,50 +169,63 @@ export function streamAsk(
   callbacks: StreamAskCallbacks,
   meetingId?: string
 ): () => void {
-  const token = getToken();
-  const sessionId = getOrCreateSessionId();
+  let es: EventSource | null = null;
+  let closed = false;
 
-  const params = new URLSearchParams({ q: query, session_id: sessionId });
-  if (meetingId) params.set('meeting_id', meetingId);
-  if (token) params.set('token', token);
-
-  const url = `${API_BASE_URL}/memory/ask?${params.toString()}`;
-  const es = new EventSource(url);
-  let completed = false;
-
-  es.addEventListener('citations', (e) => {
+  (async () => {
     try {
-      const citations = JSON.parse((e as MessageEvent).data);
-      callbacks.onCitations?.(citations);
-    } catch { /* non-fatal */ }
-  });
+      // Obtain a short-lived stream token so the long-lived JWT stays out of the URL.
+      const { stream_token } = await fetchWithAuth<{ stream_token: string }>('/auth/stream-token', { method: 'POST' });
+      if (closed) return;
 
-  es.addEventListener('token', (e) => {
-    callbacks.onToken((e as MessageEvent).data);
-  });
+      const sessionId = getOrCreateSessionId();
+      const params = new URLSearchParams({ q: query, session_id: sessionId, stream_token });
+      if (meetingId) params.set('meeting_id', meetingId);
 
-  es.addEventListener('done', () => {
-    completed = true;
-    callbacks.onDone?.();
-    es.close();
-  });
+      es = new EventSource(`${API_BASE_URL}/memory/ask?${params}`);
 
-  es.addEventListener('error', (e) => {
-    if (!completed) {
-      const msg = (e as MessageEvent).data ?? 'AI Memory connection error';
-      callbacks.onError?.(msg);
+      es.addEventListener('citations', (e) => {
+        try {
+          const citations = JSON.parse((e as MessageEvent).data);
+          callbacks.onCitations?.(citations);
+        } catch { /* non-fatal */ }
+      });
+
+      es.addEventListener('token', (e) => {
+        callbacks.onToken((e as MessageEvent).data);
+      });
+
+      es.addEventListener('done', () => {
+        closed = true;
+        callbacks.onDone?.();
+        es?.close();
+      });
+
+      es.addEventListener('error', (e) => {
+        if (!closed) {
+          const msg = (e as MessageEvent).data ?? 'AI Memory connection error';
+          callbacks.onError?.(msg);
+        }
+        es?.close();
+      });
+
+      es.onerror = () => {
+        if (!closed) {
+          callbacks.onError?.('Lost connection to AI Memory');
+        }
+        es?.close();
+      };
+    } catch {
+      if (!closed) {
+        callbacks.onError?.('Failed to establish AI Memory connection');
+      }
     }
-    es.close();
-  });
+  })();
 
-  es.onerror = () => {
-    if (!completed) {
-      callbacks.onError?.('Lost connection to AI Memory');
-    }
-    es.close();
+  return () => {
+    closed = true;
+    es?.close();
   };
-
-  return () => es.close();
 }
 
 // ── Session Helpers ───────────────────────────────────────────

@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	ErrWorkspaceNotFound = errors.New("workspace not found")
-	ErrForbidden         = errors.New("forbidden: insufficient permissions")
+	ErrWorkspaceNotFound  = errors.New("workspace not found")
+	ErrForbidden          = errors.New("forbidden: insufficient permissions")
 	ErrUserNotInWorkspace = errors.New("user is not a member of this workspace")
+	ErrUserNotFound       = errors.New("no user found with that email address")
 )
 
 type Workspace struct {
@@ -102,6 +103,19 @@ func (s *Service) CreateWorkspace(ctx context.Context, userID, name string) (*Wo
 	return &w, nil
 }
 
+// GetDefaultWorkspaceID returns the workspace_id of the first workspace the user belongs to.
+// This is used to resolve workspace scope when only a user_id is available (e.g. JWT auth context).
+func GetDefaultWorkspaceID(ctx context.Context, userID string) (string, error) {
+	var workspaceID string
+	err := db.DB.QueryRowContext(ctx, `
+		SELECT workspace_id FROM workspace_members WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1
+	`, userID).Scan(&workspaceID)
+	if err == sql.ErrNoRows {
+		return "", ErrWorkspaceNotFound
+	}
+	return workspaceID, err
+}
+
 // GetRole returns the role of a user in a workspace.
 func (s *Service) GetRole(ctx context.Context, workspaceID, userID string) (string, error) {
 	var role string
@@ -123,6 +137,21 @@ func (s *Service) AddMember(ctx context.Context, workspaceID, targetUserID, targ
 		ON CONFLICT (workspace_id, user_id) DO UPDATE SET role = EXCLUDED.role
 	`, workspaceID, targetUserID, targetRole)
 	return err
+}
+
+// InviteMemberByEmail looks up a user by email and adds them to the workspace.
+func (s *Service) InviteMemberByEmail(ctx context.Context, workspaceID, email, role string) error {
+	var userID string
+	err := db.DB.QueryRowContext(ctx,
+		`SELECT id FROM users WHERE email = $1`, email,
+	).Scan(&userID)
+	if err == sql.ErrNoRows {
+		return ErrUserNotFound
+	}
+	if err != nil {
+		return err
+	}
+	return s.AddMember(ctx, workspaceID, userID, role)
 }
 
 // ListMembers lists all members of a workspace.
