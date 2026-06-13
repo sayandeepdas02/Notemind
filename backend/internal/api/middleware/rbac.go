@@ -1,12 +1,18 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	
+
 	"notemind/internal/workspace"
 )
+
+// RoleGetter is the subset of workspace.Service the RBAC middleware needs.
+type RoleGetter interface {
+	GetRole(ctx context.Context, workspaceID, userID string) (string, error)
+}
 
 // WorkspaceRole defines RBAC levels
 var roleHierarchy = map[string]int{
@@ -19,7 +25,7 @@ var roleHierarchy = map[string]int{
 
 // RequireWorkspaceRole is a Gin middleware that extracts a workspace_id from the URL params or headers,
 // verifies the user belongs to the workspace, and checks if they meet the minimum required role.
-func RequireWorkspaceRole(workspaceSvc *workspace.Service, minRequiredRole string) gin.HandlerFunc {
+func RequireWorkspaceRole(workspaceSvc RoleGetter, minRequiredRole string) gin.HandlerFunc {
 	minLevel, exists := roleHierarchy[minRequiredRole]
 	if !exists {
 		panic("invalid minRequiredRole passed to middleware: " + minRequiredRole)

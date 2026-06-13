@@ -8,6 +8,7 @@ import (
 	"notemind/internal/ai"
 	"notemind/internal/api"
 	apikeys "notemind/internal/api/keys"
+	wsmiddleware "notemind/internal/api/middleware"
 	"notemind/internal/auth"
 	"notemind/internal/automation"
 	"notemind/internal/billing"
@@ -313,9 +314,14 @@ func main() {
 	{
 		workspaceG.GET("", workspaceHandler.List)
 		workspaceG.POST("", workspaceHandler.Create)
-		// No middleware yet to avoid cyclic dependency for now, we'll apply it at the handler level or separate package
-		workspaceG.GET("/:workspace_id/members", workspaceHandler.ListMembers)
-		workspaceG.POST("/:workspace_id/members", workspaceHandler.AddMember)
+		workspaceG.GET("/:workspace_id/members",
+			wsmiddleware.RequireWorkspaceRole(workspaceSvc, "member"),
+			workspaceHandler.ListMembers,
+		)
+		workspaceG.POST("/:workspace_id/members",
+			wsmiddleware.RequireWorkspaceRole(workspaceSvc, "admin"),
+			workspaceHandler.AddMember,
+		)
 	}
 
 	// Calendar (protected)

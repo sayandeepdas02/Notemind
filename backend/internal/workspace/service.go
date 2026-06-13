@@ -103,6 +103,19 @@ func (s *Service) CreateWorkspace(ctx context.Context, userID, name string) (*Wo
 	return &w, nil
 }
 
+// GetDefaultWorkspaceID returns the workspace_id of the first workspace the user belongs to.
+// This is used to resolve workspace scope when only a user_id is available (e.g. JWT auth context).
+func GetDefaultWorkspaceID(ctx context.Context, userID string) (string, error) {
+	var workspaceID string
+	err := db.DB.QueryRowContext(ctx, `
+		SELECT workspace_id FROM workspace_members WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1
+	`, userID).Scan(&workspaceID)
+	if err == sql.ErrNoRows {
+		return "", ErrWorkspaceNotFound
+	}
+	return workspaceID, err
+}
+
 // GetRole returns the role of a user in a workspace.
 func (s *Service) GetRole(ctx context.Context, workspaceID, userID string) (string, error) {
 	var role string
