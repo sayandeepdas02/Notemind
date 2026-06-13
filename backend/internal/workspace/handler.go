@@ -55,6 +55,15 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, w)
 }
 
+// memberView is the API response shape for a workspace member.
+// It flattens the user fields so clients receive { id, name, email, role }.
+type memberView struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
 // GET /workspaces/:workspace_id/members
 // Note: This endpoint should be protected by the RequireWorkspaceRole middleware.
 func (h *Handler) ListMembers(c *gin.Context) {
@@ -64,29 +73,41 @@ func (h *Handler) ListMembers(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
-	if members == nil {
-		members = []WorkspaceMember{}
+
+	views := make([]memberView, 0, len(members))
+	for _, m := range members {
+		v := memberView{ID: m.UserID, Role: m.Role}
+		if m.UserName != nil {
+			v.Name = *m.UserName
+		}
+		if m.UserEmail != nil {
+			v.Email = *m.UserEmail
+		}
+		views = append(views, v)
 	}
-	c.JSON(http.StatusOK, members)
+	c.JSON(http.StatusOK, views)
 }
 
 // POST /workspaces/:workspace_id/members
+// Accepts { email, role } and resolves the user by email before inserting.
 // Note: This endpoint should be protected by RequireWorkspaceRole(admin)
 func (h *Handler) AddMember(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
-	
+
 	var req struct {
-		UserID string `json:"user_id" binding:"required"`
-		Role   string `json:"role" binding:"required"`
+		Email string `json:"email" binding:"required"`
+		Role  string `json:"role" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Basic role validation could happen here or in service layer
-	err := h.svc.AddMember(c.Request.Context(), workspaceID, req.UserID, req.Role)
+	err := h.svc.InviteMemberByEmail(c.Request.Context(), workspaceID, req.Email, req.Role)
+	if err == ErrUserNotFound {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no Notemind account found for " + req.Email})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
