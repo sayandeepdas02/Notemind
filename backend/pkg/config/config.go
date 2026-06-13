@@ -79,6 +79,10 @@ type Config struct {
 	// FrontendURL is the base URL of the Next.js frontend, used for OAuth redirects.
 	FrontendURL string
 
+	// APIBaseURL is the public-facing base URL of the API server, used for building
+	// callback URLs in outgoing emails (e.g. magic-link verify links).
+	APIBaseURL string
+
 	// ── Stripe Billing ────────────────────────────────────────────────────────
 	StripeSecretKey     string
 	StripeWebhookSecret string
@@ -137,6 +141,7 @@ func LoadConfig() *Config {
 		AllowedOrigins: getEnv("ALLOWED_ORIGINS", "http://localhost:3000"),
 
 		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:3000"),
+		APIBaseURL:  getEnv("API_BASE_URL", "http://localhost:8080"),
 
 		// Stripe
 		StripeSecretKey:     getEnv("STRIPE_SECRET_KEY", ""),

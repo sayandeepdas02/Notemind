@@ -16,18 +16,20 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
+	"notemind/internal/notifications"
 	"notemind/pkg/config"
 	"notemind/pkg/logger"
 )
 
 type Handler struct {
-	service *Service
-	redis   *redis.Client
-	cfg     *config.Config
+	service  *Service
+	redis    *redis.Client
+	cfg      *config.Config
+	emailSvc *notifications.EmailService
 }
 
-func NewHandler(service *Service, redisClient *redis.Client, cfg *config.Config) *Handler {
-	return &Handler{service: service, redis: redisClient, cfg: cfg}
+func NewHandler(service *Service, redisClient *redis.Client, cfg *config.Config, emailSvc *notifications.EmailService) *Handler {
+	return &Handler{service: service, redis: redisClient, cfg: cfg, emailSvc: emailSvc}
 }
 
 // ── Real Google OAuth ─────────────────────────────────────────────────────────
@@ -220,6 +222,138 @@ type googleUserInfo struct {
 	Email   string `json:"email"`
 	Name    string `json:"name"`
 	Picture string `json:"picture"`
+}
+
+// ── Email magic-link auth ─────────────────────────────────────────────────────
+
+// EmailAuth issues a magic-link and sends it to the provided email address.
+// POST /auth/email
+func (h *Handler) EmailAuth(c *gin.Context) {
+	var req struct {
+		Email string `json:"email" binding:"required"`
+		Name  string `json:"name"`
+		Mode  string `json:"mode"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "valid email is required"})
+		return
+	}
+
+	otp, err := generateNonce()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate token"})
+		return
+	}
+
+	payload, _ := json.Marshal(map[string]string{"email": req.Email, "name": req.Name})
+	if err := h.redis.Set(c.Request.Context(), "email_otp:"+otp, payload, 15*time.Minute).Err(); err != nil {
+		logger.L.Error("failed to store email OTP", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send magic link"})
+		return
+	}
+
+	magicLink := fmt.Sprintf("%s/auth/email/verify?token=%s", h.cfg.APIBaseURL, otp)
+
+	if h.emailSvc != nil {
+		if err := h.emailSvc.SendMagicLink(c.Request.Context(), req.Email, req.Name, magicLink); err != nil {
+			logger.L.Error("failed to send magic link email", zap.String("email", req.Email), zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to send sign-in email"})
+			return
+		}
+	} else {
+		// Dev fallback: log the magic link so developers can sign in without Resend configured.
+		logger.L.Info("magic link (email service not configured)", zap.String("link", magicLink))
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "check your email for a sign-in link"})
+}
+
+// VerifyEmailToken validates the OTP from a magic-link email and redirects to the frontend.
+// GET /auth/email/verify
+func (h *Handler) VerifyEmailToken(c *gin.Context) {
+	otp := c.Query("token")
+	if otp == "" {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=invalid_token")
+		return
+	}
+
+	key := "email_otp:" + otp
+	raw, err := h.redis.GetDel(c.Request.Context(), key).Result()
+	if err != nil {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=invalid_or_expired_token")
+		return
+	}
+
+	var payload struct {
+		Email string `json:"email"`
+		Name  string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil || payload.Email == "" {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=invalid_token")
+		return
+	}
+
+	user, err := h.service.GetOrCreateUserByEmail(payload.Email, payload.Name)
+	if err != nil {
+		logger.L.Error("failed to get/create user for email auth", zap.Error(err))
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=db_error")
+		return
+	}
+
+	token, err := GenerateToken(user.ID)
+	if err != nil {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=token_failed")
+		return
+	}
+
+	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token))
+}
+
+// ── User profile endpoints ─────────────────────────────────────────────────────
+
+// GetMe returns the authenticated user's profile.
+// GET /users/me
+func (h *Handler) GetMe(c *gin.Context) {
+	userID := c.GetString("user_id")
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// UpdateMe updates the authenticated user's display name.
+// PUT /users/me
+func (h *Handler) UpdateMe(c *gin.Context) {
+	userID := c.GetString("user_id")
+
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Name) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name is required"})
+		return
+	}
+
+	user, err := h.service.UpdateUserName(userID, strings.TrimSpace(req.Name))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update profile"})
+		return
+	}
+	c.JSON(http.StatusOK, user)
+}
+
+// DeleteMe permanently deletes the authenticated user's account.
+// DELETE /users/me
+func (h *Handler) DeleteMe(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if err := h.service.DeleteUser(userID); err != nil {
+		logger.L.Error("failed to delete user", zap.String("user_id", userID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "account deleted"})
 }
 
 func (h *Handler) fetchUserInfo(ctx context.Context, accessToken string) (*googleUserInfo, error) {

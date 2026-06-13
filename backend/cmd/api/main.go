@@ -16,6 +16,7 @@ import (
 	"notemind/internal/health"
 	"notemind/internal/meeting"
 	"notemind/internal/memory"
+	"notemind/internal/notifications"
 	"notemind/internal/organization"
 	"notemind/internal/provider"
 	"notemind/internal/workspace"
@@ -113,8 +114,13 @@ func main() {
 	// Wire API key validator into auth middleware for nm_xxx token support
 	auth.GlobalKeyValidator = apiKeySvc
 
+	emailSvc := notifications.NewEmailService(cfg.ResendAPIKey, cfg.EmailFrom, cfg.FrontendURL)
+	if cfg.ResendAPIKey == "" {
+		logger.L.Warn("RESEND_API_KEY not set — magic-link emails will be logged instead of sent")
+	}
+
 	authService := auth.NewService()
-	authHandler := auth.NewHandler(authService, redisClient, cfg)
+	authHandler := auth.NewHandler(authService, redisClient, cfg, emailSvc)
 	shareHandler := share.NewHandler()
 
 	orgRepo := organization.NewRepository()
@@ -228,6 +234,18 @@ func main() {
 	// Dev-only fake login (blocked in production by handler guard)
 	r.POST("/auth/google", authHandler.GoogleLogin)
 
+	// Auth — email magic-link (passwordless)
+	r.POST("/auth/email", authHandler.EmailAuth)
+	r.GET("/auth/email/verify", authHandler.VerifyEmailToken)
+
+	// User profile (authenticated)
+	usersG := r.Group("/users").Use(auth.Middleware())
+	{
+		usersG.GET("/me", authHandler.GetMe)
+		usersG.PUT("/me", authHandler.UpdateMe)
+		usersG.DELETE("/me", authHandler.DeleteMe)
+	}
+
 	// Google Calendar OAuth
 	r.GET("/auth/google-calendar", auth.Middleware(), calHandler.InitiateOAuth)
 	r.GET("/auth/google-calendar/callback", calHandler.OAuthCallback)
@@ -313,7 +331,7 @@ func main() {
 	{
 		workspaceG.GET("", workspaceHandler.List)
 		workspaceG.POST("", workspaceHandler.Create)
-		// No middleware yet to avoid cyclic dependency for now, we'll apply it at the handler level or separate package
+		workspaceG.PUT("/:workspace_id", workspaceHandler.Update)
 		workspaceG.GET("/:workspace_id/members", workspaceHandler.ListMembers)
 		workspaceG.POST("/:workspace_id/members", workspaceHandler.AddMember)
 	}

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -91,6 +92,61 @@ func (s *Service) GetUserWorkspaces(userID string) ([]WorkspaceSummary, error) {
 		workspaces = append(workspaces, ws)
 	}
 	return workspaces, nil
+}
+
+// GetUserByID returns a user by their primary key.
+func (s *Service) GetUserByID(id string) (*User, error) {
+	var user User
+	err := s.db.QueryRow(`
+		SELECT id, email, name, avatar_url, created_at
+		FROM users WHERE id = $1
+	`, id).Scan(&user.ID, &user.Email, &user.Name, &user.AvatarURL, &user.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+	return &user, nil
+}
+
+// UpdateUserName sets a new display name for the user.
+func (s *Service) UpdateUserName(id, name string) (*User, error) {
+	var user User
+	err := s.db.QueryRow(`
+		UPDATE users SET name = $1 WHERE id = $2
+		RETURNING id, email, name, avatar_url, created_at
+	`, name, id).Scan(&user.ID, &user.Email, &user.Name, &user.AvatarURL, &user.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+	return &user, nil
+}
+
+// DeleteUser permanently removes a user record.
+func (s *Service) DeleteUser(id string) error {
+	_, err := s.db.Exec(`DELETE FROM users WHERE id = $1`, id)
+	return err
+}
+
+// GetOrCreateUserByEmail finds or creates a user identified by email.
+// Used for the email magic-link sign-up/sign-in flow.
+func (s *Service) GetOrCreateUserByEmail(email, name string) (*User, error) {
+	if name == "" {
+		parts := strings.SplitN(email, "@", 2)
+		name = parts[0]
+	}
+	var user User
+	err := s.db.QueryRow(`
+		INSERT INTO users (id, email, name)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (email) DO UPDATE
+		  SET name = CASE WHEN users.name = '' THEN EXCLUDED.name ELSE users.name END
+		RETURNING id, email, name, avatar_url, created_at
+	`, uuid.New().String(), email, name).
+		Scan(&user.ID, &user.Email, &user.Name, &user.AvatarURL, &user.CreatedAt)
+	if err != nil {
+		logger.L.Error("failed to get-or-create user by email", zap.String("email", email), zap.Error(err))
+		return nil, fmt.Errorf("could not find or create user: %w", err)
+	}
+	return &user, nil
 }
 
 func GenerateToken(userID string) (string, error) {

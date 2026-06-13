@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Mail } from 'lucide-react';
 import { api, storeSession } from '@/lib/api';
 import type { AuthResponse } from '@/types/api';
 
@@ -14,6 +14,7 @@ function CallbackContent() {
   useEffect(() => {
     const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
+    const sent = searchParams.get('sent');
 
     if (errorParam) {
       setError(
@@ -21,6 +22,11 @@ function CallbackContent() {
           ? 'Google sign-in was cancelled.'
           : 'Authentication failed. Please try again.'
       );
+      return;
+    }
+
+    // Email magic-link sent — stay on page to show "check your email" UI.
+    if (sent === '1' && !token) {
       return;
     }
 
@@ -52,6 +58,33 @@ function CallbackContent() {
 
     finish();
   }, [searchParams, router]);
+
+  const sent = searchParams.get('sent');
+  const email = searchParams.get('email');
+
+  if (sent === '1' && !searchParams.get('token')) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center mx-auto mb-4">
+            <Mail size={24} className="text-brand" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">Check your email</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            We sent a sign-in link to{' '}
+            <span className="font-medium text-foreground">{email ?? 'your email'}</span>.
+            Click the link in the email to continue.
+          </p>
+          <a
+            href="/auth"
+            className="text-sm text-brand hover:underline"
+          >
+            Back to sign in
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

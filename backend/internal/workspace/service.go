@@ -102,6 +102,38 @@ func (s *Service) CreateWorkspace(ctx context.Context, userID, name string) (*Wo
 	return &w, nil
 }
 
+// UpdateWorkspace renames a workspace. Requires the caller to be owner or admin.
+func (s *Service) UpdateWorkspace(ctx context.Context, workspaceID, userID, name string) (*Workspace, error) {
+	role, err := s.GetRole(ctx, workspaceID, userID)
+	if err != nil {
+		return nil, ErrWorkspaceNotFound
+	}
+	if role != "owner" && role != "admin" {
+		return nil, ErrForbidden
+	}
+
+	var w Workspace
+	err = db.DB.QueryRowContext(ctx, `
+		UPDATE workspaces SET name = $1 WHERE id = $2
+		RETURNING id, name, created_at
+	`, name, workspaceID).Scan(&w.ID, &w.Name, &w.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
+// GetUserIDByEmail resolves an email address to a user ID.
+// Returns an error if no user with that email exists.
+func (s *Service) GetUserIDByEmail(ctx context.Context, email string) (string, error) {
+	var userID string
+	err := db.DB.QueryRowContext(ctx, `SELECT id FROM users WHERE email = $1`, email).Scan(&userID)
+	if err == sql.ErrNoRows {
+		return "", errors.New("no registered user found with that email address")
+	}
+	return userID, err
+}
+
 // GetRole returns the role of a user in a workspace.
 func (s *Service) GetRole(ctx context.Context, workspaceID, userID string) (string, error) {
 	var role string

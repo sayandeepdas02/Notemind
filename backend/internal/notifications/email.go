@@ -67,6 +67,33 @@ func (s *EmailService) SendMeetingSummary(
 	return nil
 }
 
+// SendMagicLink sends a passwordless sign-in email containing a one-click magic link.
+func (s *EmailService) SendMagicLink(ctx context.Context, to, name, magicLink string) error {
+	if s == nil {
+		return nil
+	}
+	subject := "Sign in to Notemind"
+	displayName := name
+	if displayName == "" {
+		displayName = to
+	}
+	html := fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f8;margin:0;padding:24px}
+.card{background:#fff;border-radius:12px;max-width:500px;margin:0 auto;padding:36px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+h2{margin:0 0 8px;font-size:20px;color:#111}
+p{font-size:15px;color:#374151;line-height:1.6;margin:0 0 20px}
+.btn{display:inline-block;background:#16a34a;color:#fff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px}
+.note{font-size:13px;color:#9ca3af;margin-top:24px}
+</style></head><body><div class="card">
+<h2>Sign in to Notemind</h2>
+<p>Hi %s,<br>Click the button below to sign in. This link expires in 15 minutes.</p>
+<a class="btn" href="%s">Sign in to Notemind</a>
+<p class="note">If you didn't request this, you can ignore this email.</p>
+</div></body></html>`, escapeHTML(displayName), magicLink)
+
+	return s.send(ctx, to, subject, html)
+}
+
 // SendMeetingReminder sends a "starting in 5 minutes" reminder.
 // Implemented but not yet wired to a trigger.
 func (s *EmailService) SendMeetingReminder(

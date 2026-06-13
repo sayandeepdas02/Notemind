@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -55,6 +56,35 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, w)
 }
 
+// PUT /workspaces/:workspace_id
+func (h *Handler) Update(c *gin.Context) {
+	userID := c.GetString("user_id")
+	workspaceID := c.Param("workspace_id")
+
+	var req struct {
+		Name string `json:"name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	w, err := h.svc.UpdateWorkspace(c.Request.Context(), workspaceID, userID, req.Name)
+	if err != nil {
+		if errors.Is(err, ErrForbidden) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions"})
+			return
+		}
+		if errors.Is(err, ErrWorkspaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, w)
+}
+
 // GET /workspaces/:workspace_id/members
 // Note: This endpoint should be protected by the RequireWorkspaceRole middleware.
 func (h *Handler) ListMembers(c *gin.Context) {
@@ -72,12 +102,13 @@ func (h *Handler) ListMembers(c *gin.Context) {
 }
 
 // POST /workspaces/:workspace_id/members
-// Note: This endpoint should be protected by RequireWorkspaceRole(admin)
+// Accepts { email, role } — resolves the email to a user ID before adding.
 func (h *Handler) AddMember(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
-	
+
 	var req struct {
-		UserID string `json:"user_id" binding:"required"`
+		Email  string `json:"email"`
+		UserID string `json:"user_id"`
 		Role   string `json:"role" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -85,12 +116,23 @@ func (h *Handler) AddMember(c *gin.Context) {
 		return
 	}
 
-	// Basic role validation could happen here or in service layer
-	err := h.svc.AddMember(c.Request.Context(), workspaceID, req.UserID, req.Role)
-	if err != nil {
+	targetUserID := req.UserID
+	if targetUserID == "" {
+		if req.Email == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "email or user_id is required"})
+			return
+		}
+		resolved, err := h.svc.GetUserIDByEmail(c.Request.Context(), req.Email)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
+		targetUserID = resolved
+	}
+
+	if err := h.svc.AddMember(c.Request.Context(), workspaceID, targetUserID, req.Role); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"status": "member added"})
 }
