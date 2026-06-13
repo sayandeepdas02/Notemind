@@ -8,6 +8,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"go.uber.org/zap"
 
+	"notemind/internal/workspace"
 	"notemind/pkg/logger"
 )
 
@@ -30,7 +31,12 @@ func NewRAGEngine(embedder Embedder, repo *Repository, llmClient LLMClient) *RAG
 // Ask queries the memory layer and streams an answer back.
 // Returns a channel for the streamed response, the citations used, and any initial error.
 func (r *RAGEngine) Ask(ctx context.Context, userID, question string, filters SearchFilters, sessionID string) (<-chan string, []Citation, error) {
-	log := logger.With(zap.String("user_id", userID), zap.String("session_id", sessionID))
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
+
+	log := logger.With(zap.String("workspace_id", workspaceID), zap.String("session_id", sessionID))
 
 	// 1. Retrieve context chunks
 	embeddings, err := r.embedder.Embed(ctx, []string{question})
@@ -101,36 +107,35 @@ CONTEXT:
 		}
 
 		// Save the exchange to DB
-		// Note: we'd need to add these DB methods to repository.go
 		msg := ChatMessage{
-			UserID:    userID,
-			SessionID: sessionID,
-			Role:      "assistant",
-			Content:   fullResponse.String(),
-			Citations: citations,
-			Model:     r.llmClient.Model(),
+			WorkspaceID: workspaceID,
+			SessionID:   sessionID,
+			Role:        "assistant",
+			Content:     fullResponse.String(),
+			Citations:   citations,
+			Model:       r.llmClient.Model(),
 		}
 		if filters.MeetingID != "" {
 			msg.MeetingID = &filters.MeetingID
 		}
 
 		// We do an async fire-and-forget save
-		go r.saveChatExchange(userID, sessionID, question, msg)
+		go r.saveChatExchange(workspaceID, sessionID, question, msg)
 	}()
 
 	return outCh, citations, nil
 }
 
-func (r *RAGEngine) saveChatExchange(userID, sessionID, question string, assistantMsg ChatMessage) {
+func (r *RAGEngine) saveChatExchange(workspaceID, sessionID, question string, assistantMsg ChatMessage) {
 	ctx := context.Background() // new disconnected context for async save
 
 	// Save User message
 	userMsg := ChatMessage{
-		UserID:    userID,
-		SessionID: sessionID,
-		Role:      "user",
-		Content:   question,
-		MeetingID: assistantMsg.MeetingID,
+		WorkspaceID: workspaceID,
+		SessionID:   sessionID,
+		Role:        "user",
+		Content:     question,
+		MeetingID:   assistantMsg.MeetingID,
 	}
 	_ = r.repo.SaveChatMessage(ctx, userMsg)
 

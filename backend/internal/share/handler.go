@@ -10,6 +10,7 @@ import (
 
 	"notemind/internal/ai"
 	"notemind/internal/db"
+	"notemind/internal/workspace"
 	"notemind/pkg/logger"
 )
 
@@ -27,9 +28,14 @@ func (h *Handler) CreateShare(c *gin.Context) {
 	meetingID := c.Param("id")
 	userID := c.GetString("user_id")
 
-	// Verify ownership
+	// Verify ownership via workspace scope
+	workspaceID, wsErr := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if wsErr != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
 	var exists bool
-	err := h.db.QueryRow("SELECT EXISTS(SELECT 1 FROM meetings WHERE id = $1 AND user_id = $2)", meetingID, userID).Scan(&exists)
+	err := h.db.QueryRow("SELECT EXISTS(SELECT 1 FROM meetings WHERE id = $1 AND workspace_id = $2)", meetingID, workspaceID).Scan(&exists)
 	if err != nil || !exists {
 		c.JSON(http.StatusNotFound, gin.H{"error": "meeting not found or unauthorized"})
 		return

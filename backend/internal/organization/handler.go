@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"notemind/internal/workspace"
 )
 
 // Handler exposes folder, tag, and search REST endpoints.
@@ -39,7 +40,12 @@ func (h *Handler) CreateFolder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	f.UserID = userID
+	workspaceID, err := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
+	f.WorkspaceID = workspaceID
 	if f.Color == "" {
 		f.Color = "#6366f1"
 	}
@@ -58,8 +64,13 @@ func (h *Handler) UpdateFolder(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	workspaceID, err := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
 	f.ID = c.Param("id")
-	f.UserID = userID
+	f.WorkspaceID = workspaceID
 	if err := h.repo.UpdateFolder(c.Request.Context(), &f); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -125,7 +136,12 @@ func (h *Handler) CreateTag(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	t.UserID = userID
+	workspaceID, err := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
+	t.WorkspaceID = workspaceID
 	if t.Color == "" {
 		t.Color = "#6366f1"
 	}

@@ -9,14 +9,29 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"notemind/internal/ai"
 )
 
+// meetingService is the subset of Service methods used by Handler,
+// defined as an interface to allow unit testing without a real database.
+type meetingService interface {
+	UploadMeeting(filePath string, userID string) (string, error)
+	JoinMeeting(meetingURL string, userID string, meetingType string) (*Meeting, error)
+	StopMeeting(meetingID string, userID string) error
+	GetMeetings(userID string) ([]Meeting, error)
+	GetMeeting(id string, userID string) (*Meeting, error)
+	GetSegments(meetingID string) ([]TranscriptSegment, error)
+	GetSegmentsAfter(meetingID string, lastSeq int) ([]TranscriptSegment, error)
+	GetMeetingIntelligence(meetingID string) (*ai.MeetingSummary, error)
+}
+
 type Handler struct {
-	service *Service
+	service meetingService
 	hub     *Hub
 }
 
-func NewHandler(service *Service, hub *Hub) *Handler {
+func NewHandler(service meetingService, hub *Hub) *Handler {
 	return &Handler{service: service, hub: hub}
 }
 
@@ -224,6 +239,16 @@ func (h *Handler) GetMeeting(c *gin.Context) {
 // GET /meetings/:id/transcripts
 func (h *Handler) GetTranscripts(c *gin.Context) {
 	id := c.Param("id")
+	userID := c.GetString("user_id")
+	m, err := h.service.GetMeeting(id, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch meeting"})
+		return
+	}
+	if m == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "meeting not found"})
+		return
+	}
 	segs, err := h.service.GetSegments(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch transcripts"})
@@ -242,6 +267,16 @@ func (h *Handler) GetTranscript(c *gin.Context) {
 
 func (h *Handler) GetSummary(c *gin.Context) {
 	id := c.Param("id")
+	userID := c.GetString("user_id")
+	m, err := h.service.GetMeeting(id, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch meeting"})
+		return
+	}
+	if m == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "meeting not found"})
+		return
+	}
 	intel, err := h.service.GetMeetingIntelligence(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch meeting intelligence"})

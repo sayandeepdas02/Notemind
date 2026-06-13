@@ -2,8 +2,10 @@ package intelligence
 
 import (
 	"context"
+	"fmt"
 
 	"notemind/internal/db"
+	"notemind/internal/workspace"
 )
 
 // Decision represents a resolved decision extracted from a meeting.
@@ -34,13 +36,17 @@ func (s *DecisionService) TrackDecision(ctx context.Context, d Decision) error {
 
 // GetUserDecisions fetches all decisions for a user's workspace.
 func (s *DecisionService) GetUserDecisions(ctx context.Context, userID string) ([]Decision, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	rows, err := db.DB.QueryContext(ctx, `
 		SELECT e.id, e.meeting_id, e.name
 		FROM meeting_entities e
 		JOIN meetings m ON m.id = e.meeting_id
-		WHERE m.user_id = $1 AND e.entity_type = 'decision'
+		WHERE m.workspace_id = $1 AND e.entity_type = 'decision'
 		ORDER BY e.created_at DESC
-	`, userID)
+	`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
