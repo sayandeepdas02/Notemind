@@ -152,15 +152,15 @@ type SearchFilters struct {
 	ToDate    string
 }
 
-// SearchResult is a lightweight meeting result from full-text search.
+// SearchResult matches the frontend SearchResult contract exactly.
 type SearchResult struct {
-	ID         string    `json:"id"`
-	MeetingURL string    `json:"meeting_url"`
-	Status     string    `json:"status"`
-	Provider   string    `json:"provider"`
-	Snippet    string    `json:"snippet"`    // matched transcript text
-	Rank       float64   `json:"rank"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID        string  `json:"id"`
+	Type      string  `json:"type"`
+	Title     string  `json:"title"`
+	Snippet   string  `json:"snippet"`
+	MeetingID string  `json:"meeting_id"`
+	Timestamp *string `json:"timestamp,omitempty"`
+	Score     float64 `json:"score"`
 }
 
 // SearchResponse wraps search results with metadata, matching the frontend contract.
@@ -172,15 +172,16 @@ type SearchResponse struct {
 
 // Search performs full-text search across meetings and transcripts for the user.
 func (r *Repository) Search(ctx context.Context, userID, query string, filters SearchFilters) ([]SearchResult, error) {
-	// Build dynamic query with optional filters
 	baseQ := `
-		SELECT DISTINCT m.id, COALESCE(m.meeting_url,''), m.status::text, m.provider::text,
+		SELECT DISTINCT m.id,
+		       COALESCE(ce.title, m.meeting_url, 'Untitled Meeting') AS title,
 		       ts_headline('english', COALESCE(s.text,''), q) AS snippet,
-		       ts_rank(s.search_vector, q) AS rank,
+		       ts_rank(COALESCE(s.search_vector, m.search_vector), q) AS score,
 		       m.created_at
 		FROM meetings m
 		LEFT JOIN transcript_segments s ON s.meeting_id = m.id
 		  AND s.search_vector @@ q
+		LEFT JOIN calendar_events ce ON ce.notemind_meeting_id = m.id
 		, plainto_tsquery('english', $2) q
 		WHERE m.user_id = $1
 		  AND (m.search_vector @@ q OR s.search_vector @@ q)
@@ -213,7 +214,7 @@ func (r *Repository) Search(ctx context.Context, userID, query string, filters S
 		args = append(args, filters.FolderID)
 	}
 
-	baseQ += " ORDER BY rank DESC, m.created_at DESC LIMIT 50"
+	baseQ += " ORDER BY score DESC, m.created_at DESC LIMIT 50"
 
 	rows, err := db.DB.QueryContext(ctx, baseQ, args...)
 	if err != nil {
@@ -225,13 +226,17 @@ func (r *Repository) Search(ctx context.Context, userID, query string, filters S
 	for rows.Next() {
 		var sr SearchResult
 		var snippet sql.NullString
-		if err := rows.Scan(&sr.ID, &sr.MeetingURL, &sr.Status, &sr.Provider,
-			&snippet, &sr.Rank, &sr.CreatedAt); err != nil {
+		var createdAt time.Time
+		if err := rows.Scan(&sr.ID, &sr.Title, &snippet, &sr.Score, &createdAt); err != nil {
 			return nil, err
 		}
 		if snippet.Valid {
 			sr.Snippet = snippet.String
 		}
+		sr.Type = "meeting"
+		sr.MeetingID = sr.ID
+		ts := createdAt.UTC().Format(time.RFC3339)
+		sr.Timestamp = &ts
 		results = append(results, sr)
 	}
 	return results, nil
