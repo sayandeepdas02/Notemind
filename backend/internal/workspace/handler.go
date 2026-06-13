@@ -56,7 +56,6 @@ func (h *Handler) Create(c *gin.Context) {
 }
 
 // GET /workspaces/:workspace_id/members
-// Note: This endpoint should be protected by the RequireWorkspaceRole middleware.
 func (h *Handler) ListMembers(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
 	members, err := h.svc.ListMembers(c.Request.Context(), workspaceID)
@@ -72,7 +71,6 @@ func (h *Handler) ListMembers(c *gin.Context) {
 }
 
 // POST /workspaces/:workspace_id/members
-// Note: This endpoint should be protected by RequireWorkspaceRole(admin)
 func (h *Handler) AddMember(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
 	
