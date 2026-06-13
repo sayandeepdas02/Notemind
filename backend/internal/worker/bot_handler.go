@@ -71,10 +71,10 @@ func (h *BotHandler) Handle(ctx context.Context, t *asynq.Task) error {
 	nativeID, err := h.vexaClient.StartBot(payload.MeetingURL)
 	if err != nil {
 		log.Error("Vexa StartBot failed", zap.Error(err))
-		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, "failed"); markErr != nil {
+		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateFailed)); markErr != nil {
 			log.Error("additionally failed to mark meeting as failed", zap.Error(markErr))
 		}
-		h.hub.PublishStatus(payload.MeetingID, "failed")
+		h.hub.PublishStatus(payload.MeetingID, string(meeting.StateFailed))
 		return fmt.Errorf("vexa start bot failed: %w", err)
 	}
 
@@ -85,11 +85,11 @@ func (h *BotHandler) Handle(ctx context.Context, t *asynq.Task) error {
 		return fmt.Errorf("store native_meeting_id failed: %w", err)
 	}
 
-	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, "live"); err != nil {
-		log.Error("failed to update meeting status to live", zap.Error(err))
+	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateRecording)); err != nil {
+		log.Error("failed to update meeting status to RECORDING", zap.Error(err))
 	}
 
-	h.hub.PublishStatus(payload.MeetingID, "live")
+	h.hub.PublishStatus(payload.MeetingID, string(meeting.StateRecording))
 	log.Info("bot join job completed", zap.String("native_meeting_id", nativeID))
 	return nil
 }

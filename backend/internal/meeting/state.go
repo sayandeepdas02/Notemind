@@ -33,9 +33,10 @@ const (
 // validTransitions defines allowed state changes.
 var validTransitions = map[MeetingState]map[MeetingState]bool{
 	StateCreated: {
-		StateScheduled: true,
-		StateJoining:   true,
-		StateFailed:    true,
+		StateScheduled:    true,
+		StateJoining:      true,
+		StateTranscribing: true, // Phase 1: direct audio upload path
+		StateFailed:       true,
 	},
 	StateScheduled: {
 		StateJoining: true,
