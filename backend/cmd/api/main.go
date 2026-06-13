@@ -197,12 +197,22 @@ func main() {
 	r.GET("/health", health.NewHandler(cfg.RedisAddr))
 
 	// Zoom OAuth
-	// /auth/zoom is protected so we can extract the authenticated user_id and encode it
-	// in the state parameter. The callback is public (browser redirect from Zoom).
+	// POST /auth/zoom/initiate returns the Zoom consent URL as JSON so the browser
+	// can authenticate via the Authorization header (fetch) and then navigate.
+	// GET /auth/zoom is kept for non-browser API clients that can follow redirects
+	// with an Authorization header (e.g. curl -L -H "Authorization: Bearer ...").
+	r.POST("/auth/zoom/initiate", auth.Middleware(), func(c *gin.Context) {
+		userID := c.GetString("user_id")
+		stateToken, err := auth.GenerateToken(userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "failed to generate state"})
+			return
+		}
+		c.JSON(200, gin.H{"url": zoomOAuthSvc.AuthorizationURL(stateToken)})
+	})
 	r.GET("/auth/zoom", auth.Middleware(), func(c *gin.Context) {
 		_ = zoomOAuthHandler
 		userID := c.GetString("user_id")
-		// Sign a short-lived state token so the callback can verify and retrieve userID.
 		stateToken, err := auth.GenerateToken(userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "failed to generate state"})
@@ -232,6 +242,10 @@ func main() {
 	// Auth — real Google OAuth
 	r.GET("/auth/google/initiate", authHandler.InitiateGoogleOAuth)
 	r.GET("/auth/google/callback", authHandler.GoogleOAuthCallback)
+	// Exchanges the one-time auth code (from OAuth redirect) for a JWT — public.
+	r.POST("/auth/exchange", authHandler.ExchangeCode)
+	// Issues a short-lived SSE stream token for browser EventSource clients.
+	r.POST("/auth/stream-token", auth.Middleware(), authHandler.IssueStreamToken)
 	// Dev-only fake login (blocked in production by handler guard)
 	r.POST("/auth/google", authHandler.GoogleLogin)
 
@@ -277,9 +291,6 @@ func main() {
 		meetings.GET("/:id/transcript", handler.GetTranscript)
 		meetings.GET("/:id/summary", handler.GetSummary)
 
-		// SSE real-time stream
-		meetings.GET("/:id/stream", handler.StreamTranscripts)
-
 		// Share
 		meetings.POST("/:id/share", shareHandler.CreateShare)
 
@@ -319,13 +330,19 @@ func main() {
 		autoG.DELETE("/rules/:id", autoHandler.DeleteRule)
 	}
 
+	// SSE routes — use StreamTokenMiddleware so browsers can authenticate via
+	// a short-lived ?stream_token= param (EventSource cannot set headers).
+	sseAuth := auth.StreamTokenMiddleware(redisClient)
+	r.GET("/meetings/:id/stream", sseAuth, handler.StreamTranscripts)
+
 	// Memory AI
 	memoryG := r.Group("/memory").Use(auth.Middleware())
 	{
 		memoryG.GET("/search", memoryHandler.Search)
-		memoryG.GET("/ask", memoryHandler.Ask)
 		memoryG.GET("/chat/history", memoryHandler.GetHistory)
 	}
+	// /memory/ask is SSE — same stream-token auth as above.
+	r.GET("/memory/ask", sseAuth, memoryHandler.Ask)
 
 	// Workspaces (Phase 4)
 	workspaceG := r.Group("/workspaces").Use(auth.Middleware())

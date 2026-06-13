@@ -12,7 +12,7 @@ function CallbackContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const code = searchParams.get('code');
     const errorParam = searchParams.get('error');
     const sent = searchParams.get('sent');
 
@@ -26,17 +26,19 @@ function CallbackContent() {
     }
 
     // Email magic-link sent — stay on page to show "check your email" UI.
-    if (sent === '1' && !token) {
+    if (sent === '1' && !code) {
       return;
     }
 
-    if (!token) {
-      setError('No authentication token received. Please try signing in again.');
+    if (!code) {
+      setError('No authentication code received. Please try signing in again.');
       return;
     }
 
     const finish = async () => {
       try {
+        // Exchange the one-time code for the JWT — the token never touches the URL.
+        const { token } = await api.post<{ token: string }>('/auth/exchange', { code });
         localStorage.setItem('notemind_token', token);
 
         const data = await api.get<AuthResponse['user']>('/users/me');
@@ -62,7 +64,7 @@ function CallbackContent() {
   const sent = searchParams.get('sent');
   const email = searchParams.get('email');
 
-  if (sent === '1' && !searchParams.get('token')) {
+  if (sent === '1' && !searchParams.get('code')) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="text-center max-w-sm">

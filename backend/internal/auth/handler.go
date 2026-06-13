@@ -123,8 +123,62 @@ func (h *Handler) GoogleOAuthCallback(c *gin.Context) {
 		return
 	}
 
-	// Redirect to frontend callback with token as query param
-	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token))
+	// Store the JWT behind a short-lived, single-use exchange code so the JWT
+	// never appears in the browser URL (history, logs, referrers).
+	code, err := generateNonce()
+	if err != nil {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=token_failed")
+		return
+	}
+	if err := h.redis.Set(c.Request.Context(), "auth_code:"+code, token, 60*time.Second).Err(); err != nil {
+		logger.L.Error("failed to store auth code", zap.Error(err))
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=token_failed")
+		return
+	}
+	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?code=%s", h.cfg.FrontendURL, code))
+}
+
+// ExchangeCode trades a one-time auth code (from the OAuth redirect) for the
+// actual JWT. The code is stored in Redis with a 60-second TTL and deleted on
+// first use, so the long-lived JWT is never placed in a browser-visible URL.
+// POST /auth/exchange
+func (h *Handler) ExchangeCode(c *gin.Context) {
+	var req struct {
+		Code string `json:"code"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Code == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "code required"})
+		return
+	}
+	token, err := h.redis.GetDel(c.Request.Context(), "auth_code:"+req.Code).Result()
+	if err != nil || token == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired code"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
+// IssueStreamToken issues a short-lived (60 s), single-use token that browser
+// clients can place in the ?stream_token= query parameter of an EventSource URL.
+// This avoids exposing the long-lived JWT in SSE URLs.
+// POST /auth/stream-token  (requires valid JWT via auth.Middleware)
+func (h *Handler) IssueStreamToken(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	tok, err := generateNonce()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate stream token"})
+		return
+	}
+	if err := h.redis.Set(c.Request.Context(), "stream_token:"+tok, userID, 60*time.Second).Err(); err != nil {
+		logger.L.Error("failed to store stream token", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to issue stream token"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"stream_token": tok})
 }
 
 // ── Dev-only: fake email login ────────────────────────────────────────────────
@@ -306,7 +360,19 @@ func (h *Handler) VerifyEmailToken(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?token=%s", h.cfg.FrontendURL, token))
+	// Use the same single-use code pattern as Google OAuth so the JWT never
+	// appears in the browser URL bar.
+	code, err := generateNonce()
+	if err != nil {
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=token_failed")
+		return
+	}
+	if err := h.redis.Set(c.Request.Context(), "auth_code:"+code, token, 60*time.Second).Err(); err != nil {
+		logger.L.Error("failed to store auth code for email verify", zap.Error(err))
+		c.Redirect(http.StatusFound, h.cfg.FrontendURL+"/auth?error=token_failed")
+		return
+	}
+	c.Redirect(http.StatusFound, fmt.Sprintf("%s/auth/callback?code=%s", h.cfg.FrontendURL, code))
 }
 
 // ── User profile endpoints ─────────────────────────────────────────────────────

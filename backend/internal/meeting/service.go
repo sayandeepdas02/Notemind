@@ -48,7 +48,7 @@ func (s *Service) UploadMeeting(filePath string, userID string) (string, error) 
 	m := &Meeting{
 		ID:       meetingID,
 		AudioURL: filePath,
-		Status:   "pending",
+		Status:   string(StateCreated),
 	}
 	if err := s.repo.CreateMeeting(m, userID); err != nil {
 		return "", fmt.Errorf("could not create meeting in DB: %w", err)
@@ -57,7 +57,7 @@ func (s *Service) UploadMeeting(filePath string, userID string) (string, error) 
 
 	if err := s.queueClient.EnqueueTranscription(meetingID, filePath); err != nil {
 		logger.L.Error("could not enqueue meeting", zap.String("meeting_id", meetingID), zap.Error(err))
-		if markErr := s.repo.UpdateMeetingStatus(meetingID, "failed"); markErr != nil {
+		if markErr := s.repo.UpdateMeetingStatus(meetingID, string(StateFailed)); markErr != nil {
 			logger.L.Error("additionally failed to mark meeting as failed after enqueue error",
 				zap.String("meeting_id", meetingID), zap.Error(markErr))
 		}
@@ -85,7 +85,7 @@ func (s *Service) JoinMeeting(meetingURL string, userID string, meetingType stri
 	m := &Meeting{
 		ID:          meetingID,
 		MeetingURL:  meetingURL,
-		Status:      "joining",
+		Status:      string(StateJoining),
 		MeetingType: meetingType,
 	}
 	if err := s.repo.CreateMeeting(m, userID); err != nil {
@@ -108,8 +108,8 @@ func (s *Service) JoinMeeting(meetingURL string, userID string, meetingType stri
 			zap.String("meeting_id", meetingID),
 			zap.String("provider", prov.Name()),
 			zap.Error(err))
-		_ = s.repo.UpdateMeetingStatus(meetingID, "failed")
-		s.hub.PublishStatus(meetingID, "failed")
+		_ = s.repo.UpdateMeetingStatus(meetingID, string(StateFailed))
+		s.hub.PublishStatus(meetingID, string(StateFailed))
 		return nil, fmt.Errorf("provider could not start bot: %w", err)
 	}
 
@@ -119,11 +119,11 @@ func (s *Service) JoinMeeting(meetingURL string, userID string, meetingType stri
 	}
 	m.NativeMeetingID = handle.NativeID
 
-	if err := s.repo.UpdateMeetingStatus(meetingID, "live"); err != nil {
-		logger.L.Error("failed to set status=live", zap.Error(err))
+	if err := s.repo.UpdateMeetingStatus(meetingID, string(StateRecording)); err != nil {
+		logger.L.Error("failed to set status=RECORDING", zap.Error(err))
 	}
-	m.Status = "live"
-	s.hub.PublishStatus(meetingID, "live")
+	m.Status = string(StateRecording)
+	s.hub.PublishStatus(meetingID, string(StateRecording))
 
 	// Launch streaming goroutine with provider
 	go s.streamTranscripts(meetingID, handle.NativeID, prov)
@@ -176,7 +176,7 @@ func (s *Service) streamTranscripts(meetingID, nativeMeetingID string, prov prov
 	for {
 		select {
 		case <-ctx.Done():
-			s.endMeeting(meetingID, "ended")
+			s.endMeeting(meetingID, string(StateEnded))
 			return
 
 		case <-idleTimer.C:
@@ -262,7 +262,7 @@ func (s *Service) endMeeting(meetingID, status string) {
 	s.hub.PublishStatus(meetingID, status)
 
 	// If the meeting successfully ended, trigger the Phase 3 AI Summary Pipeline
-	if status == "ENDED" || status == "completed" {
+	if status == string(StateEnded) {
 		go s.generateMeetingIntelligence(meetingID)
 	}
 }

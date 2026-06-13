@@ -7,7 +7,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export default function CalendarOnboarding() {
   const handleConnect = () => {
-    window.location.href = `${API_BASE}/auth/google-calendar`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("notemind_token") : null;
+    window.location.href = `${API_BASE}/auth/google-calendar${token ? `?token=${token}` : ""}`;
   };
 
   return (

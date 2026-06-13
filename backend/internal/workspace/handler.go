@@ -28,7 +28,7 @@ func (h *Handler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	if workspaces == nil {
 		workspaces = []Workspace{}
 	}
@@ -38,7 +38,7 @@ func (h *Handler) List(c *gin.Context) {
 // POST /workspaces
 func (h *Handler) Create(c *gin.Context) {
 	userID := c.GetString("user_id")
-	
+
 	var req struct {
 		Name string `json:"name" binding:"required"`
 	}
@@ -85,6 +85,15 @@ func (h *Handler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, w)
 }
 
+// memberView is the API response shape for a workspace member.
+// It flattens the user fields so clients receive { id, name, email, role }.
+type memberView struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}
+
 // GET /workspaces/:workspace_id/members
 func (h *Handler) ListMembers(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
@@ -93,43 +102,41 @@ func (h *Handler) ListMembers(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
-	if members == nil {
-		members = []WorkspaceMember{}
+
+	views := make([]memberView, 0, len(members))
+	for _, m := range members {
+		v := memberView{ID: m.UserID, Role: m.Role}
+		if m.UserName != nil {
+			v.Name = *m.UserName
+		}
+		if m.UserEmail != nil {
+			v.Email = *m.UserEmail
+		}
+		views = append(views, v)
 	}
-	c.JSON(http.StatusOK, members)
+	c.JSON(http.StatusOK, views)
 }
 
 // POST /workspaces/:workspace_id/members
-// Accepts { email, role } — resolves the email to a user ID before adding.
+// Accepts { email, role } and resolves the user by email before inserting.
 func (h *Handler) AddMember(c *gin.Context) {
 	workspaceID := c.Param("workspace_id")
 
 	var req struct {
-		Email  string `json:"email"`
-		UserID string `json:"user_id"`
-		Role   string `json:"role" binding:"required"`
+		Email string `json:"email" binding:"required"`
+		Role  string `json:"role" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	targetUserID := req.UserID
-	if targetUserID == "" {
-		if req.Email == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "email or user_id is required"})
-			return
-		}
-		resolved, err := h.svc.GetUserIDByEmail(c.Request.Context(), req.Email)
-		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-			return
-		}
-		targetUserID = resolved
+	err := h.svc.InviteMemberByEmail(c.Request.Context(), workspaceID, req.Email, req.Role)
+	if err == ErrUserNotFound {
+		c.JSON(http.StatusNotFound, gin.H{"error": "no Notemind account found for " + req.Email})
+		return
 	}
-
-	if err := h.svc.AddMember(c.Request.Context(), workspaceID, targetUserID, req.Role); err != nil {
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
