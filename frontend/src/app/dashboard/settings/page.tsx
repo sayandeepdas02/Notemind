@@ -366,7 +366,6 @@ function IntegrationsSection() {
   const [calStatus, setCalStatus] = useState<{ connected: boolean } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
-  const token = typeof window !== 'undefined' ? localStorage.getItem('notemind_token') : null;
 
   useEffect(() => {
     api.get<{ connected: boolean }>('/calendar/status')
@@ -406,7 +405,12 @@ function IntegrationsSection() {
       name: 'Zoom',
       desc: 'Join Zoom meetings automatically',
       connected: false as boolean,
-      onConnect: () => { window.location.href = `${API_BASE}/auth/zoom${token ? `?token=${token}` : ''}`; },
+      onConnect: async () => {
+        try {
+          const { url } = await api.post<{ url: string }>('/auth/zoom/initiate', {});
+          window.location.href = url;
+        } catch { /* user will see nothing happen — acceptable for a connect button */ }
+      },
     },
   ];
 

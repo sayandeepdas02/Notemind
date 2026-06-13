@@ -191,12 +191,22 @@ func main() {
 	r.GET("/health", health.NewHandler(cfg.RedisAddr))
 
 	// Zoom OAuth
-	// /auth/zoom is protected so we can extract the authenticated user_id and encode it
-	// in the state parameter. The callback is public (browser redirect from Zoom).
+	// POST /auth/zoom/initiate returns the Zoom consent URL as JSON so the browser
+	// can authenticate via the Authorization header (fetch) and then navigate.
+	// GET /auth/zoom is kept for non-browser API clients that can follow redirects
+	// with an Authorization header (e.g. curl -L -H "Authorization: Bearer ...").
+	r.POST("/auth/zoom/initiate", auth.Middleware(), func(c *gin.Context) {
+		userID := c.GetString("user_id")
+		stateToken, err := auth.GenerateToken(userID)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "failed to generate state"})
+			return
+		}
+		c.JSON(200, gin.H{"url": zoomOAuthSvc.AuthorizationURL(stateToken)})
+	})
 	r.GET("/auth/zoom", auth.Middleware(), func(c *gin.Context) {
 		_ = zoomOAuthHandler
 		userID := c.GetString("user_id")
-		// Sign a short-lived state token so the callback can verify and retrieve userID.
 		stateToken, err := auth.GenerateToken(userID)
 		if err != nil {
 			c.JSON(500, gin.H{"error": "failed to generate state"})
