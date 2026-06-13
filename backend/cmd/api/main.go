@@ -264,6 +264,7 @@ func main() {
 
 		// Share
 		meetings.POST("/:id/share", shareHandler.CreateShare)
+		meetings.DELETE("/:id/share/:token", shareHandler.RevokeShare)
 
 		// Tags on meetings
 		meetings.POST("/:id/tags", orgHandler.AddTagToMeeting)

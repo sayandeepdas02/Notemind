@@ -3,22 +3,34 @@ package share
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 
-	"notemind/internal/ai"
 	"notemind/internal/db"
 	"notemind/pkg/logger"
 )
 
+// Handler serves all share-related HTTP endpoints.
 type Handler struct {
-	db *sql.DB
+	store Store
 }
 
+// NewHandler returns a Handler backed by the application database.
 func NewHandler() *Handler {
-	return &Handler{db: db.DB}
+	return NewHandlerWithStore(&sqlStore{db: db.DB})
+}
+
+// NewHandlerWithStore returns a Handler using the provided Store.
+// Intended for unit tests that inject a mock Store.
+func NewHandlerWithStore(s Store) *Handler {
+	return &Handler{store: s}
+}
+
+type createShareRequest struct {
+	ExpiresInHours *int  `json:"expires_in_hours"`
+	IsPublic       *bool `json:"is_public"`
 }
 
 // CreateShare generates a share token for a meeting.
@@ -27,87 +39,99 @@ func (h *Handler) CreateShare(c *gin.Context) {
 	meetingID := c.Param("id")
 	userID := c.GetString("user_id")
 
-	// Verify ownership
-	var exists bool
-	err := h.db.QueryRow("SELECT EXISTS(SELECT 1 FROM meetings WHERE id = $1 AND user_id = $2)", meetingID, userID).Scan(&exists)
-	if err != nil || !exists {
+	ok, err := h.store.CanWriteShare(c.Request.Context(), meetingID, userID)
+	if err != nil {
+		logger.L.Error("share access check failed", zap.String("meeting_id", meetingID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify access"})
+		return
+	}
+	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"error": "meeting not found or unauthorized"})
 		return
 	}
 
-	// Create share token
-	token := uuid.New().String()
-	_, err = h.db.Exec(`
-		INSERT INTO meeting_shares (id, meeting_id, share_token, is_public)
-		VALUES ($1, $2, $3, true)`,
-		uuid.New().String(), meetingID, token)
+	var req createShareRequest
+	_ = c.ShouldBindJSON(&req) // body is optional
 
+	isPublic := true
+	if req.IsPublic != nil {
+		isPublic = *req.IsPublic
+	}
+
+	var expiresAt *time.Time
+	if req.ExpiresInHours != nil && *req.ExpiresInHours > 0 {
+		t := time.Now().UTC().Add(time.Duration(*req.ExpiresInHours) * time.Hour)
+		expiresAt = &t
+	}
+
+	token, err := h.store.InsertShare(c.Request.Context(), meetingID, userID, isPublic, expiresAt)
 	if err != nil {
 		logger.L.Error("failed to create share", zap.String("meeting_id", meetingID), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate share link"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"share_token": token})
+	resp := gin.H{"share_token": token}
+	if expiresAt != nil {
+		resp["expires_at"] = expiresAt.Format(time.RFC3339)
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
-// GetSharedIntelligence returns the meeting intelligence for a public share token.
+// RevokeShare marks a share token as revoked so it can no longer be used.
+// DELETE /meetings/:id/share/:token
+func (h *Handler) RevokeShare(c *gin.Context) {
+	meetingID := c.Param("id")
+	token := c.Param("token")
+	userID := c.GetString("user_id")
+
+	ok, err := h.store.CanWriteShare(c.Request.Context(), meetingID, userID)
+	if err != nil {
+		logger.L.Error("share access check failed", zap.String("meeting_id", meetingID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify access"})
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "meeting not found or unauthorized"})
+		return
+	}
+
+	found, err := h.store.RevokeShare(c.Request.Context(), meetingID, token)
+	if err != nil {
+		logger.L.Error("failed to revoke share",
+			zap.String("meeting_id", meetingID),
+			zap.String("token", token),
+			zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoke share"})
+		return
+	}
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{"error": "share not found or already revoked"})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+// GetSharedIntelligence returns the meeting intelligence for a public, active share token.
 // GET /share/:token
 func (h *Handler) GetSharedIntelligence(c *gin.Context) {
 	token := c.Param("token")
 
-	var meetingID string
-	err := h.db.QueryRow("SELECT meeting_id FROM meeting_shares WHERE share_token = $1 AND is_public = true", token).Scan(&meetingID)
+	meetingID, err := h.store.LookupShare(c.Request.Context(), token)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": "invalid or private share link"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "invalid, revoked, or expired share link"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify share token"})
 		return
 	}
 
-	// Fetch intelligence manually to avoid circular deps with meeting repo, or reuse it.
-	// For simplicity, we just duplicate the fetch logic or we could inject meeting.Repository here.
-	
-	var result ai.MeetingSummary
-	var summaryText sql.NullString
-	err = h.db.QueryRow("SELECT summary_text FROM summaries WHERE meeting_id = $1 ORDER BY created_at DESC LIMIT 1", meetingID).Scan(&summaryText)
-	if err == nil && summaryText.Valid {
-		result.Summary = summaryText.String
-	}
-
-	rows, err := h.db.Query("SELECT task, COALESCE(owner,'') FROM action_items WHERE meeting_id = $1 ORDER BY created_at ASC", meetingID)
-	if err == nil {
-		for rows.Next() {
-			var ai ai.ActionItem
-			if rows.Scan(&ai.Task, &ai.Owner) == nil {
-				result.ActionItems = append(result.ActionItems, ai)
-			}
-		}
-		rows.Close()
-	}
-
-	rows, err = h.db.Query("SELECT decision_text FROM decisions WHERE meeting_id = $1 ORDER BY created_at ASC", meetingID)
-	if err == nil {
-		for rows.Next() {
-			var d string
-			if rows.Scan(&d) == nil {
-				result.Decisions = append(result.Decisions, d)
-			}
-		}
-		rows.Close()
-	}
-
-	rows, err = h.db.Query("SELECT point_text FROM key_points WHERE meeting_id = $1 ORDER BY created_at ASC", meetingID)
-	if err == nil {
-		for rows.Next() {
-			var kp string
-			if rows.Scan(&kp) == nil {
-				result.KeyPoints = append(result.KeyPoints, kp)
-			}
-		}
-		rows.Close()
+	result, err := h.store.GetIntelligence(c.Request.Context(), meetingID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch meeting intelligence"})
+		return
 	}
 
 	c.JSON(http.StatusOK, result)
