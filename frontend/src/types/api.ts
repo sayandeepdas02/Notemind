@@ -39,6 +39,14 @@ export interface WorkspaceMembership {
   created_at: string;
 }
 
+// Shape returned by GET /workspaces/:id/members
+export interface WorkspaceMemberView {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 // ── Meeting ───────────────────────────────────────────────────
 
 export type MeetingStatus =

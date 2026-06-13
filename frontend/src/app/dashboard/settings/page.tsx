@@ -8,7 +8,7 @@ import {
   UserPlus, Key, Copy, Plus, Eye, EyeOff,
 } from 'lucide-react';
 import { api, APIError, getStoredUser } from '@/lib/api';
-import type { User, Workspace, APIKey, CreateAPIKeyResponse } from '@/types/api';
+import type { User, Workspace, APIKey, CreateAPIKeyResponse, WorkspaceMemberView } from '@/types/api';
 import { cn } from '@/lib/utils';
 import { Panel } from '@/components/ui/panel';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -231,7 +231,7 @@ function ProfileSection({ user }: { user: User }) {
 function WorkspaceSection() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [wsName, setWsName] = useState('');
-  const [members, setMembers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
+  const [members, setMembers] = useState<WorkspaceMemberView[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviting, setInviting] = useState(false);
@@ -246,7 +246,7 @@ function WorkspaceSection() {
         const ws: Workspace = JSON.parse(raw);
         setWorkspace(ws);
         setWsName(ws.name);
-        api.get<{ id: string; name: string; email: string; role: string }[]>(`/workspaces/${ws.id}/members`)
+        api.get<WorkspaceMemberView[]>(`/workspaces/${ws.id}/members`)
           .then(data => setMembers(data ?? []))
           .catch(() => {})
           .finally(() => setLoading(false));
@@ -274,6 +274,9 @@ function WorkspaceSection() {
     try {
       await api.post(`/workspaces/${workspace.id}/members`, { email: inviteEmail.trim(), role: 'member' });
       setInviteEmail('');
+      // Refresh member list so the newly added user appears
+      const updated = await api.get<WorkspaceMemberView[]>(`/workspaces/${workspace.id}/members`);
+      setMembers(updated ?? []);
     } catch (err) {
       setInviteError(err instanceof APIError ? err.message : 'Failed to invite');
     } finally { setInviting(false); }
