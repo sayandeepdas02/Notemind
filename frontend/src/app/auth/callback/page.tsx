@@ -12,7 +12,7 @@ function CallbackContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const code = searchParams.get('code');
     const errorParam = searchParams.get('error');
 
     if (errorParam) {
@@ -24,13 +24,15 @@ function CallbackContent() {
       return;
     }
 
-    if (!token) {
-      setError('No authentication token received. Please try signing in again.');
+    if (!code) {
+      setError('No authentication code received. Please try signing in again.');
       return;
     }
 
     const finish = async () => {
       try {
+        // Exchange the one-time code for the JWT — the token never touches the URL.
+        const { token } = await api.post<{ token: string }>('/auth/exchange', { code });
         localStorage.setItem('notemind_token', token);
 
         const data = await api.get<AuthResponse['user']>('/users/me');
