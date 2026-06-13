@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"notemind/internal/db"
+	"notemind/internal/workspace"
 	"notemind/pkg/logger"
 )
 
@@ -64,14 +65,14 @@ type Action struct {
 
 // Rule is a single automation policy.
 type Rule struct {
-	ID         string       `json:"id"`
-	UserID     string       `json:"user_id"`
-	Name       string       `json:"name"`
-	Trigger    TriggerEvent `json:"trigger"`
-	Conditions []Condition  `json:"conditions"`
-	Actions    []Action     `json:"actions"`
-	Enabled    bool         `json:"enabled"`
-	CreatedAt  time.Time    `json:"created_at"`
+	ID          string       `json:"id"`
+	WorkspaceID string       `json:"workspace_id"`
+	Name        string       `json:"name"`
+	Trigger     TriggerEvent `json:"trigger"`
+	Conditions  []Condition  `json:"conditions"`
+	Actions     []Action     `json:"actions"`
+	Enabled     bool         `json:"enabled"`
+	CreatedAt   time.Time    `json:"created_at"`
 }
 
 // EventContext carries the data available when a trigger fires.
@@ -177,12 +178,16 @@ type Repository struct{}
 func NewRepository() *Repository { return &Repository{} }
 
 func (r *Repository) GetEnabledRules(ctx context.Context, userID string, trigger TriggerEvent) ([]Rule, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	rows, err := db.DB.QueryContext(ctx, `
-		SELECT id, user_id, name, trigger, conditions, actions, enabled, created_at
+		SELECT id, workspace_id, name, trigger, conditions, actions, enabled, created_at
 		FROM automation_rules
-		WHERE user_id = $1 AND trigger = $2 AND enabled = true
+		WHERE workspace_id = $1 AND trigger = $2 AND enabled = true
 		ORDER BY created_at
-	`, userID, string(trigger))
+	`, workspaceID, string(trigger))
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +198,7 @@ func (r *Repository) GetEnabledRules(ctx context.Context, userID string, trigger
 		var rule Rule
 		var condJSON, actJSON []byte
 		var triggerStr string
-		if err := rows.Scan(&rule.ID, &rule.UserID, &rule.Name, &triggerStr,
+		if err := rows.Scan(&rule.ID, &rule.WorkspaceID, &rule.Name, &triggerStr,
 			&condJSON, &actJSON, &rule.Enabled, &rule.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -206,10 +211,14 @@ func (r *Repository) GetEnabledRules(ctx context.Context, userID string, trigger
 }
 
 func (r *Repository) ListRules(ctx context.Context, userID string) ([]Rule, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	rows, err := db.DB.QueryContext(ctx, `
-		SELECT id, user_id, name, trigger, conditions, actions, enabled, created_at
-		FROM automation_rules WHERE user_id = $1 ORDER BY created_at
-	`, userID)
+		SELECT id, workspace_id, name, trigger, conditions, actions, enabled, created_at
+		FROM automation_rules WHERE workspace_id = $1 ORDER BY created_at
+	`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +229,7 @@ func (r *Repository) ListRules(ctx context.Context, userID string) ([]Rule, erro
 		var rule Rule
 		var condJSON, actJSON []byte
 		var triggerStr string
-		if err := rows.Scan(&rule.ID, &rule.UserID, &rule.Name, &triggerStr,
+		if err := rows.Scan(&rule.ID, &rule.WorkspaceID, &rule.Name, &triggerStr,
 			&condJSON, &actJSON, &rule.Enabled, &rule.CreatedAt); err != nil {
 			return nil, err
 		}
@@ -236,10 +245,10 @@ func (r *Repository) CreateRule(ctx context.Context, rule *Rule) error {
 	condJSON, _ := json.Marshal(rule.Conditions)
 	actJSON, _ := json.Marshal(rule.Actions)
 	return db.DB.QueryRowContext(ctx, `
-		INSERT INTO automation_rules (user_id, name, trigger, conditions, actions, enabled)
+		INSERT INTO automation_rules (workspace_id, name, trigger, conditions, actions, enabled)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at
-	`, rule.UserID, rule.Name, string(rule.Trigger), condJSON, actJSON, rule.Enabled).
+	`, rule.WorkspaceID, rule.Name, string(rule.Trigger), condJSON, actJSON, rule.Enabled).
 		Scan(&rule.ID, &rule.CreatedAt)
 }
 
@@ -249,13 +258,17 @@ func (r *Repository) UpdateRule(ctx context.Context, rule *Rule) error {
 	_, err := db.DB.ExecContext(ctx, `
 		UPDATE automation_rules
 		SET name = $1, trigger = $2, conditions = $3, actions = $4, enabled = $5, updated_at = NOW()
-		WHERE id = $6 AND user_id = $7
-	`, rule.Name, string(rule.Trigger), condJSON, actJSON, rule.Enabled, rule.ID, rule.UserID)
+		WHERE id = $6 AND workspace_id = $7
+	`, rule.Name, string(rule.Trigger), condJSON, actJSON, rule.Enabled, rule.ID, rule.WorkspaceID)
 	return err
 }
 
 func (r *Repository) DeleteRule(ctx context.Context, ruleID, userID string) error {
-	_, err := db.DB.ExecContext(ctx,
-		"DELETE FROM automation_rules WHERE id = $1 AND user_id = $2", ruleID, userID)
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("failed to resolve workspace: %w", err)
+	}
+	_, err = db.DB.ExecContext(ctx,
+		"DELETE FROM automation_rules WHERE id = $1 AND workspace_id = $2", ruleID, workspaceID)
 	return err
 }

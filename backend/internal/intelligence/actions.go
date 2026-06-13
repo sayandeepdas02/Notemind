@@ -2,14 +2,16 @@ package intelligence
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"notemind/internal/db"
+	"notemind/internal/workspace"
 )
 
 type ActionItem struct {
 	ID                  string
-	UserID              string
+	WorkspaceID         string
 	MeetingID           string
 	Task                string
 	Owner               string
@@ -29,9 +31,9 @@ func NewActionService() *ActionService {
 // TrackActionItem inserts a new action item found during meeting summarization.
 func (s *ActionService) TrackActionItem(ctx context.Context, item ActionItem) error {
 	_, err := db.DB.ExecContext(ctx, `
-		INSERT INTO action_item_tracking (user_id, meeting_id, task, owner, status)
+		INSERT INTO action_item_tracking (workspace_id, meeting_id, task, owner, status)
 		VALUES ($1, $2, $3, NULLIF($4, ''), 'open')
-	`, item.UserID, item.MeetingID, item.Task, item.Owner)
+	`, item.WorkspaceID, item.MeetingID, item.Task, item.Owner)
 	return err
 }
 
@@ -54,14 +56,18 @@ func (s *ActionService) ResolveActionItem(ctx context.Context, itemID, resolutio
 	return err
 }
 
-// GetUserActionItems returns open action items for a user.
+// GetUserActionItems returns open action items for a workspace.
 func (s *ActionService) GetUserActionItems(ctx context.Context, userID string) ([]ActionItem, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	rows, err := db.DB.QueryContext(ctx, `
 		SELECT id, meeting_id, task, COALESCE(owner, ''), status, created_at
 		FROM action_item_tracking
-		WHERE user_id = $1 AND status = 'open'
+		WHERE workspace_id = $1 AND status = 'open'
 		ORDER BY created_at DESC
-	`, userID)
+	`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
