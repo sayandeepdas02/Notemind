@@ -394,7 +394,7 @@ function IntegrationsSection() {
       name: 'Google Calendar',
       desc: 'Auto-join scheduled meetings',
       connected: calStatus?.connected ?? null,
-      onConnect: () => { window.location.href = `${API_BASE}/auth/google-calendar`; },
+      onConnect: () => { window.location.href = `${API_BASE}/auth/google-calendar${token ? `?token=${token}` : ''}`; },
       onAction: handleCalendarSync,
       actionLabel: syncMsg || (syncing ? 'Syncing…' : 'Sync now'),
       syncing,
