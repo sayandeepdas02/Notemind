@@ -99,11 +99,26 @@ export function useMeetingStream({
     let reconnectTimeout: ReturnType<typeof setTimeout>;
     let mounted = true;
 
-    function connect() {
+    async function connect() {
       if (!mounted) return;
-      const sse = createSSEConnection(meetingId);
-      sseRef.current = sse;
       setConnectionState('connecting');
+
+      let sse: EventSource;
+      try {
+        sse = await createSSEConnection(meetingId);
+      } catch {
+        if (!mounted) return;
+        setConnectionState('reconnecting');
+        reconnectTimeout = setTimeout(connect, 3000);
+        return;
+      }
+
+      if (!mounted) {
+        sse.close();
+        return;
+      }
+
+      sseRef.current = sse;
 
       sse.onopen = () => {
         if (mounted) setConnectionState('live');
