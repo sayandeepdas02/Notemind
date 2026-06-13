@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 
+	"notemind/internal/auth"
 	"notemind/internal/db"
 	"notemind/pkg/logger"
 )
@@ -32,25 +33,36 @@ func NewHandler(syncSvc *SyncService, frontendURL string) *Handler {
 // GET /auth/google-calendar
 // Protected — user_id comes from auth middleware.
 // Redirects the browser to Google's OAuth consent page.
-// The state parameter carries the authenticated user_id so the callback can identify the user.
+// State is a signed JWT so the callback can verify it wasn't forged.
 func (h *Handler) InitiateOAuth(c *gin.Context) {
 	userID := c.GetString("user_id")
-	c.Redirect(http.StatusFound, h.client.AuthorizationURL(userID))
+	stateToken, err := auth.GenerateToken(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate state"})
+		return
+	}
+	c.Redirect(http.StatusFound, h.client.AuthorizationURL(stateToken))
 }
 
 // GET /auth/google-calendar/callback
 // Public — receives the authorization code from Google.
-// Extracts user_id from the state param (set during InitiateOAuth).
+// Validates the signed state token to recover user_id.
 func (h *Handler) OAuthCallback(c *gin.Context) {
 	code := c.Query("code")
-	userID := c.Query("state")
+	stateToken := c.Query("state")
 
 	if code == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing authorization code"})
 		return
 	}
-	if userID == "" {
+	if stateToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing state parameter"})
+		return
+	}
+
+	userID, err := auth.ValidateToken(stateToken)
+	if err != nil || userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid or expired state"})
 		return
 	}
 
