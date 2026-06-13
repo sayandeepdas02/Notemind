@@ -181,7 +181,7 @@ func (h *Handler) StreamTranscripts(c *gin.Context) {
 			// If the meeting ended, close the stream gracefully
 			if evt.Type == "status" {
 				if d, ok := evt.Data.(map[string]string); ok {
-					if s := d["status"]; s == "ended" || s == "failed" {
+					if s := d["status"]; s == string(StateEnded) || s == string(StateFailed) {
 						return
 					}
 				}

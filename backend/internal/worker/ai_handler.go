@@ -120,8 +120,8 @@ func (h *AIHandler) Handle(ctx context.Context, t *asynq.Task) error {
 	}
 
 	// ── Mark meeting completed ────────────────────────────────────────────────
-	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, "completed"); err != nil {
-		log.Error("failed to mark meeting completed", zap.Error(err))
+	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateEnded)); err != nil {
+		log.Error("failed to mark meeting ended", zap.Error(err))
 	}
 
 	log.Info("AI summary job completed successfully",

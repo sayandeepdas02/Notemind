@@ -65,8 +65,8 @@ func (h *TranscriptionHandler) Handle(ctx context.Context, t *asynq.Task) error 
 	}
 
 	// ── Mark meeting as processing ────────────────────────────────────────────
-	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, "processing"); err != nil {
-		log.Error("failed to update meeting status to processing", zap.Error(err))
+	if err := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateTranscribing)); err != nil {
+		log.Error("failed to update meeting status to TRANSCRIBING", zap.Error(err))
 		return err // transient
 	}
 
@@ -74,7 +74,7 @@ func (h *TranscriptionHandler) Handle(ctx context.Context, t *asynq.Task) error 
 	transcriptText, err := h.transcriber.TranscribeAudio(ctx, payload.FilePath)
 	if err != nil {
 		log.Error("audio transcription failed", zap.Error(err))
-		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, "failed"); markErr != nil {
+		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateFailed)); markErr != nil {
 			log.Error("additionally failed to mark meeting as failed", zap.Error(markErr))
 		}
 		// OpenAI errors are typically transient; allow retry.
@@ -89,7 +89,7 @@ func (h *TranscriptionHandler) Handle(ctx context.Context, t *asynq.Task) error 
 	}
 	if err := h.repo.CreateTranscript(transcript); err != nil {
 		log.Error("failed to save transcript", zap.Error(err))
-		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, "failed"); markErr != nil {
+		if markErr := h.repo.UpdateMeetingStatus(payload.MeetingID, string(meeting.StateFailed)); markErr != nil {
 			log.Error("additionally failed to mark meeting as failed", zap.Error(markErr))
 		}
 		return fmt.Errorf("save transcript failed: %w", err)
