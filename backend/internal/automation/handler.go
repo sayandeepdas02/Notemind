@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"notemind/internal/workspace"
 )
 
 // Handler provides REST endpoints for managing automation rules.
@@ -38,7 +39,12 @@ func (h *Handler) CreateRule(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	rule.UserID = userID
+	workspaceID, err := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
+	rule.WorkspaceID = workspaceID
 	if !rule.Enabled && rule.Name == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "name and trigger are required"})
 		return
@@ -60,8 +66,13 @@ func (h *Handler) UpdateRule(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	workspaceID, err := workspace.GetDefaultWorkspaceID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve workspace"})
+		return
+	}
 	rule.ID = ruleID
-	rule.UserID = userID
+	rule.WorkspaceID = workspaceID
 
 	if err := h.repo.UpdateRule(c.Request.Context(), &rule); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

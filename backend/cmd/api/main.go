@@ -8,6 +8,7 @@ import (
 	"notemind/internal/ai"
 	"notemind/internal/api"
 	apikeys "notemind/internal/api/keys"
+	wsmiddleware "notemind/internal/api/middleware"
 	"notemind/internal/auth"
 	"notemind/internal/automation"
 	"notemind/internal/billing"
@@ -331,9 +332,18 @@ func main() {
 	{
 		workspaceG.GET("", workspaceHandler.List)
 		workspaceG.POST("", workspaceHandler.Create)
-		workspaceG.PUT("/:workspace_id", workspaceHandler.Update)
-		workspaceG.GET("/:workspace_id/members", workspaceHandler.ListMembers)
-		workspaceG.POST("/:workspace_id/members", workspaceHandler.AddMember)
+		workspaceG.PUT("/:workspace_id",
+			wsmiddleware.RequireWorkspaceRole(workspaceSvc, "admin"),
+			workspaceHandler.Update,
+		)
+		workspaceG.GET("/:workspace_id/members",
+			wsmiddleware.RequireWorkspaceRole(workspaceSvc, "member"),
+			workspaceHandler.ListMembers,
+		)
+		workspaceG.POST("/:workspace_id/members",
+			wsmiddleware.RequireWorkspaceRole(workspaceSvc, "admin"),
+			workspaceHandler.AddMember,
+		)
 	}
 
 	// Calendar (protected)

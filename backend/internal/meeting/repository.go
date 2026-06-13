@@ -15,6 +15,7 @@ import (
 
 	"notemind/internal/ai"
 	"notemind/internal/db"
+	"notemind/internal/workspace"
 	"notemind/pkg/logger"
 )
 
@@ -33,9 +34,13 @@ func (r *Repository) CreateMeeting(m *Meeting, userID string) error {
 	if mt == "" {
 		mt = "general"
 	}
-	query := `INSERT INTO meetings (id, user_id, audio_url, meeting_url, native_meeting_id, status, meeting_type, updated_at)
+	workspaceID, err := workspace.GetDefaultWorkspaceID(context.Background(), userID)
+	if err != nil {
+		return fmt.Errorf("failed to resolve workspace: %w", err)
+	}
+	query := `INSERT INTO meetings (id, workspace_id, audio_url, meeting_url, native_meeting_id, status, meeting_type, updated_at)
 	          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`
-	_, err := r.db.Exec(query, m.ID, userID, m.AudioURL, m.MeetingURL, m.NativeMeetingID, m.Status, mt)
+	_, err = r.db.Exec(query, m.ID, workspaceID, m.AudioURL, m.MeetingURL, m.NativeMeetingID, m.Status, mt)
 	if err != nil {
 		logger.L.Error("failed to insert meeting", zap.String("meeting_id", m.ID), zap.Error(err))
 		return err
@@ -58,12 +63,16 @@ func (r *Repository) UpdateMeetingProvider(id, providerName string) error {
 }
 
 func (r *Repository) GetMeetings(userID string) ([]Meeting, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(context.Background(), userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	rows, err := r.db.Query(`
 		SELECT id, COALESCE(audio_url,''), COALESCE(meeting_url,''),
 		       COALESCE(native_meeting_id,''), status,
 		       COALESCE(meeting_type,'general'), created_at,
 		       COALESCE(updated_at, created_at)
-		FROM meetings WHERE user_id = $1 ORDER BY created_at DESC`, userID)
+		FROM meetings WHERE workspace_id = $1 ORDER BY created_at DESC`, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +90,17 @@ func (r *Repository) GetMeetings(userID string) ([]Meeting, error) {
 }
 
 func (r *Repository) GetMeeting(id string, userID string) (*Meeting, error) {
+	workspaceID, err := workspace.GetDefaultWorkspaceID(context.Background(), userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve workspace: %w", err)
+	}
 	var m Meeting
-	err := r.db.QueryRow(`
+	err = r.db.QueryRow(`
 		SELECT id, COALESCE(audio_url,''), COALESCE(meeting_url,''),
 		       COALESCE(native_meeting_id,''), status,
 		       COALESCE(meeting_type,'general'), created_at,
 		       COALESCE(updated_at, created_at)
-		FROM meetings WHERE id = $1 AND user_id = $2`, id, userID).
+		FROM meetings WHERE id = $1 AND workspace_id = $2`, id, workspaceID).
 		Scan(&m.ID, &m.AudioURL, &m.MeetingURL, &m.NativeMeetingID, &m.Status, &m.MeetingType, &m.CreatedAt, &m.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {

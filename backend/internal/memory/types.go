@@ -46,15 +46,15 @@ type Citation struct {
 
 // ChatMessage represents a single turn in an AI chat session.
 type ChatMessage struct {
-	ID           string     `json:"id"`
-	UserID       string     `json:"user_id"`
-	SessionID    string     `json:"session_id"`
-	MeetingID    *string    `json:"meeting_id,omitempty"` // nil means workspace-wide scope
-	Role         string     `json:"role"`                 // 'user' or 'assistant'
-	Content      string     `json:"content"`
-	Citations    []Citation `json:"citations,omitempty"`
-	InputTokens  int        `json:"input_tokens,omitempty"`
-	OutputTokens int        `json:"output_tokens,omitempty"`
-	Model        string     `json:"model,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
+	ID          string     `json:"id"`
+	WorkspaceID string     `json:"workspace_id"`
+	SessionID   string     `json:"session_id"`
+	MeetingID   *string    `json:"meeting_id,omitempty"` // nil means workspace-wide scope
+	Role        string     `json:"role"`                 // 'user' or 'assistant'
+	Content     string     `json:"content"`
+	Citations   []Citation `json:"citations,omitempty"`
+	InputTokens  int       `json:"input_tokens,omitempty"`
+	OutputTokens int       `json:"output_tokens,omitempty"`
+	Model        string    `json:"model,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
