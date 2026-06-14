@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Share2, StopCircle, Users, Clock,
   CheckCircle2, FileText, Target, Brain, Copy,
-  Check, Download, AlignLeft, MessageSquare,
+  Check, Download, AlignLeft, MessageSquare, Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { api, APIError } from '@/lib/api';
+import { cn } from '@/lib/utils';
 import type { Meeting, MeetingIntelligence, ShareMeetingResponse } from '@/types/api';
 import { useMeetingStream, LIVE_STATUSES, ENDED_STATUSES } from '@/features/meetings/hooks/useMeetingStream';
 import { TranscriptPanel } from '@/features/meetings/components/TranscriptPanel';
 import { AIChatPanel } from '@/features/meetings/components/AIChatPanel';
+import { InsightsPanel } from '@/features/meetings/components/InsightsPanel';
 import { StatusBadge } from '@/components/ui/status-badge';
 
 // ── Meeting type badge ────────────────────────────────────────
@@ -30,12 +32,6 @@ function MeetingTypeBadge({ type }: { type?: string }) {
   const { label, className } = MEETING_TYPE_STYLES[type];
   return <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${className}`}>{label}</span>;
 }
-
-// ── Avatar ────────────────────────────────────────────────────
-
-const AVATAR_COLORS = ['bg-brand', 'bg-brand-mid', 'bg-ink', 'bg-ink-2', 'bg-ink-3', 'bg-ink-4'];
-function hashColor(name: string) { return AVATAR_COLORS[name.length % AVATAR_COLORS.length]; }
-function initials(name: string) { return name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2); }
 
 // ── Stop Bot Confirmation ─────────────────────────────────────
 
@@ -150,178 +146,7 @@ function ShareModal({ link, onClose }: { link: string; onClose: () => void }) {
   );
 }
 
-// ── AI Insights Panel ─────────────────────────────────────────
-
-type InsightTab = 'summary' | 'key_points' | 'decisions' | 'action_items' | 'participants';
-
-const INSIGHT_TABS: { id: InsightTab; label: string; icon: React.ElementType }[] = [
-  { id: 'summary',      label: 'Summary',    icon: FileText     },
-  { id: 'key_points',   label: 'Key Points', icon: Target       },
-  { id: 'decisions',    label: 'Decisions',  icon: CheckCircle2 },
-  { id: 'action_items', label: 'Actions',    icon: CheckCircle2 },
-  { id: 'participants', label: 'People',     icon: Users        },
-];
-
-function InsightsPanel({
-  intelligence, isLive, className,
-}: { intelligence: MeetingIntelligence | null; isLive: boolean; className?: string; }) {
-  const [activeTab, setActiveTab] = useState<InsightTab>('summary');
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-
-  const toggleItem = (i: number) => setCheckedItems(prev => {
-    const next = new Set(prev);
-    if (next.has(i)) { next.delete(i); } else { next.add(i); }
-    return next;
-  });
-
-  return (
-    <div className={`flex flex-col h-full bg-white border-r border-gray-100 ${className ?? ''}`}>
-      <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <Brain size={14} className="text-brand" />
-        <h2 className="text-[13px] font-semibold text-ink">AI Insights</h2>
-        {isLive && !intelligence && (
-          <span className="ml-auto text-[11px] text-ink-4 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-            Analyzing
-          </span>
-        )}
-      </div>
-
-      {!intelligence ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center text-ink-4 px-6 gap-4">
-          <div className="w-12 h-12 rounded-xl bg-brand-light flex items-center justify-center">
-            {isLive
-              ? <Brain size={20} className="text-brand animate-pulse" />
-              : <FileText size={20} className="text-ink-5" />}
-          </div>
-          <div>
-            <p className="text-[14px] font-medium text-ink mb-1">
-              {isLive ? 'Generating insights...' : 'No insights available'}
-            </p>
-            <p className="text-[12px] text-ink-5 leading-relaxed">
-              {isLive ? 'Summaries appear when the meeting ends.' : 'AI processing may still be in progress.'}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="shrink-0 px-4 pt-3 pb-0 flex gap-1 overflow-x-auto">
-            {INSIGHT_TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-brand-light text-brand border border-brand/20'
-                    : 'text-ink-4 hover:text-ink-2 hover:bg-off-white'
-                }`}
-              >
-                {tab.label}
-                {tab.id === 'action_items' && intelligence.action_items?.length > 0 && (
-                  <span className="ml-1 text-[10px] bg-brand text-white px-1.5 py-0.5 rounded-full">
-                    {intelligence.action_items.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {activeTab === 'summary' && (
-              <p className="text-[14px] text-ink-2 leading-relaxed">{intelligence.summary || 'No summary generated.'}</p>
-            )}
-
-            {activeTab === 'key_points' && (
-              <ul className="space-y-3">
-                {(intelligence.key_points ?? []).map((kp, i) => (
-                  <li key={i} className="flex gap-3 text-[14px] text-ink-2">
-                    <div className="w-5 h-5 rounded-full bg-brand-light flex items-center justify-center shrink-0 mt-0.5">
-                      <CheckCircle2 size={11} className="text-brand" />
-                    </div>
-                    <span className="leading-relaxed">{kp}</span>
-                  </li>
-                ))}
-                {!intelligence.key_points?.length && <p className="text-[13px] text-ink-5 italic">No key points extracted.</p>}
-              </ul>
-            )}
-
-            {activeTab === 'decisions' && (
-              <div className="space-y-3">
-                {(intelligence.decisions ?? []).map((dec, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3.5 rounded-xl border border-brand-light bg-brand-pale">
-                    <CheckCircle2 size={14} className="text-brand mt-0.5 shrink-0" />
-                    <p className="text-[13px] text-ink leading-snug">{dec}</p>
-                  </div>
-                ))}
-                {!intelligence.decisions?.length && <p className="text-[13px] text-ink-5 italic">No decisions recorded.</p>}
-              </div>
-            )}
-
-            {activeTab === 'action_items' && (
-              <div className="space-y-2.5">
-                {(intelligence.action_items ?? []).map((item, i) => (
-                  <div key={i}
-                    className={`flex gap-3 p-3.5 rounded-xl border transition-colors cursor-pointer ${
-                      checkedItems.has(i) ? 'border-brand-light bg-brand-pale opacity-60' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                    }`}
-                    onClick={() => toggleItem(i)}
-                  >
-                    <div className={`w-4 h-4 rounded border-2 mt-0.5 shrink-0 flex items-center justify-center transition-colors ${
-                      checkedItems.has(i) ? 'bg-brand border-brand' : 'border-gray-300'
-                    }`}>
-                      {checkedItems.has(i) && <Check size={10} className="text-white" />}
-                    </div>
-                    <div className="min-w-0">
-                      <p className={`text-[13px] font-medium leading-snug ${checkedItems.has(i) ? 'line-through text-ink-4' : 'text-ink'}`}>
-                        {item.task}
-                      </p>
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        {item.owner && (
-                          <span className="text-[11px] text-ink-4 flex items-center gap-1">
-                            <Users size={10} /> {item.owner}
-                          </span>
-                        )}
-                        {item.deadline && <span className="text-[11px] text-ink-4">{item.deadline}</span>}
-                        {item.priority && (
-                          <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                            item.priority === 'high' ? 'bg-red-50 text-red-600' :
-                            item.priority === 'medium' ? 'bg-amber-50 text-amber-700' :
-                            'bg-brand-light text-brand'
-                          }`}>
-                            {item.priority}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {!intelligence.action_items?.length && <p className="text-[13px] text-ink-5 italic">No action items extracted.</p>}
-              </div>
-            )}
-
-            {activeTab === 'participants' && (
-              <div className="space-y-2.5">
-                {(intelligence.participants ?? []).map((p, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-bold text-white shrink-0 ${hashColor(p)}`}>
-                      {initials(p)}
-                    </div>
-                    <span className="text-[14px] font-medium text-ink flex-1 truncate">{p}</span>
-                  </div>
-                ))}
-                {!intelligence.participants?.length && <p className="text-[13px] text-ink-5 italic">No participants detected.</p>}
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ── Right panel tabs ──────────────────────────────────────────
-
-type RightTab = 'chat' | 'timeline';
+// ── Right panel timeline tab ──────────────────────────────────
 
 function TimelineTab({ intelligence }: { intelligence: MeetingIntelligence | null }) {
   if (!intelligence?.timeline?.length) {
@@ -333,7 +158,7 @@ function TimelineTab({ intelligence }: { intelligence: MeetingIntelligence | nul
     );
   }
   return (
-    <div className="p-4 space-y-3 overflow-y-auto h-full">
+    <div className="p-4 space-y-3 overflow-y-auto h-full bg-white">
       {intelligence.timeline.map((ev, i) => (
         <div key={i} className="flex items-start gap-3">
           <div className="text-[11px] font-mono text-ink-4 w-14 shrink-0 pt-0.5">{ev.time}</div>
@@ -348,7 +173,7 @@ function TimelineTab({ intelligence }: { intelligence: MeetingIntelligence | nul
 
 // ── Page ──────────────────────────────────────────────────────
 
-// Mobile panel tab type
+type RightTab = 'chat' | 'timeline';
 type MobilePanel = 'transcript' | 'summary' | 'chat';
 
 export default function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -364,6 +189,13 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
   const [stopping, setStopping] = useState(false);
   const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('transcript');
+
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const toggleItem = (i: number) => setCheckedItems(prev => {
+    const next = new Set(prev);
+    if (next.has(i)) { next.delete(i); } else { next.add(i); }
+    return next;
+  });
 
   const fetchIntelligence = useCallback(async () => {
     try {
@@ -393,6 +225,15 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
 
   const isLive = LIVE_STATUSES.has(status);
 
+  // Layout states for Desktop Panel collapsing
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(isLive);
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false);
+
+  // Sync left sidebar with live changes
+  useEffect(() => {
+    setIsLeftSidebarCollapsed(isLive);
+  }, [isLive]);
+
   const stopBot = async () => {
     setStopping(true);
     try { await api.delete(`/meetings/${id}/bot`); }
@@ -401,7 +242,6 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const generateShareLink = async () => {
-    // Reuse existing token if already generated
     if (shareToken) {
       const link = `${window.location.origin}/share/${shareToken}`;
       setShareLink(link);
@@ -506,6 +346,31 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
               <Share2 size={12} />
               {shareToken ? 'Copy link' : 'Share'}
             </button>
+
+            {/* Sidebar toggle buttons */}
+            <div className="w-px h-4 bg-gray-200 mx-1 hidden lg:block" />
+
+            <button
+              onClick={() => setIsLeftSidebarCollapsed(v => !v)}
+              className={cn(
+                "p-1.5 rounded-lg border border-gray-200 transition-colors hover:bg-gray-100 text-ink-4 hover:text-ink-2 hidden lg:block",
+                !isLeftSidebarCollapsed && "bg-brand-light text-brand border-brand/20 hover:bg-brand/10 hover:text-brand"
+              )}
+              title={isLive ? "Toggle AI Insights Panel" : "Toggle Transcript Reference Panel"}
+            >
+              {isLive ? <Sparkles size={14} /> : <AlignLeft size={14} />}
+            </button>
+
+            <button
+              onClick={() => setIsRightSidebarCollapsed(v => !v)}
+              className={cn(
+                "p-1.5 rounded-lg border border-gray-200 transition-colors hover:bg-gray-100 text-ink-4 hover:text-ink-2 hidden lg:block",
+                !isRightSidebarCollapsed && "bg-brand-light text-brand border-brand/20 hover:bg-brand/10 hover:text-brand"
+              )}
+              title="Toggle AI Chat Panel"
+            >
+              <MessageSquare size={14} />
+            </button>
           </div>
         </div>
       </div>
@@ -529,49 +394,113 @@ export default function MeetingDetailPage({ params }: { params: Promise<{ id: st
         })}
       </div>
 
-      {/* 3-Panel Body (desktop) */}
+      {/* 3-Panel Body (desktop & mobile) */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        {/* Desktop: 3 panels side by side */}
-        <div className="hidden lg:flex h-full">
-          <div className="w-[280px] shrink-0 flex flex-col overflow-hidden border-r border-gray-100">
-            <TranscriptPanel segments={segments} status={status} connectionState={connectionState} className="flex-1" />
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex h-full bg-off-white">
+          
+          {/* LEFT SIDEBAR: Insights (live) or Transcript (completed) */}
+          <AnimatePresence initial={false}>
+            {!isLeftSidebarCollapsed && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 340, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                className="shrink-0 flex flex-col overflow-hidden border-r border-gray-200 bg-white h-full"
+              >
+                {isLive ? (
+                  <InsightsPanel
+                    intelligence={intelligence}
+                    isLive={isLive}
+                    meetingType={meeting?.meeting_type}
+                    checkedItems={checkedItems}
+                    onToggleItem={toggleItem}
+                    className="flex-1"
+                  />
+                ) : (
+                  <TranscriptPanel
+                    segments={segments}
+                    status={status}
+                    connectionState={connectionState}
+                    className="flex-1"
+                  />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* CENTER PANEL: Transcript (live) or Insights (completed) */}
+          <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-200 bg-white h-full">
+            {isLive ? (
+              <TranscriptPanel
+                segments={segments}
+                status={status}
+                connectionState={connectionState}
+                className="flex-1"
+              />
+            ) : (
+              <InsightsPanel
+                intelligence={intelligence}
+                isLive={isLive}
+                meetingType={meeting?.meeting_type}
+                checkedItems={checkedItems}
+                onToggleItem={toggleItem}
+                className="flex-1"
+              />
+            )}
           </div>
 
-          <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-100">
-            <InsightsPanel intelligence={intelligence} isLive={isLive} className="flex-1" />
-          </div>
+          {/* RIGHT SIDEBAR: AI Chat / Timeline */}
+          <AnimatePresence initial={false}>
+            {!isRightSidebarCollapsed && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 340, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                className="shrink-0 flex flex-col overflow-hidden bg-white h-full"
+              >
+                <div className="shrink-0 flex gap-1 px-3 py-2.5 border-b border-gray-200 bg-white">
+                  {(['chat', 'timeline'] as RightTab[]).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setRightTab(tab)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all capitalize ${
+                        rightTab === tab
+                          ? 'bg-brand-light text-brand border border-brand/20'
+                          : 'text-ink-4 hover:text-ink-2 hover:bg-off-white'
+                      }`}
+                    >
+                      {tab === 'chat' ? <MessageSquare size={12} /> : <Clock size={12} />}
+                      {tab === 'chat' ? 'AI Chat' : 'Timeline'}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  {rightTab === 'chat' && <AIChatPanel meetingId={id} className="h-full" />}
+                  {rightTab === 'timeline' && <TimelineTab intelligence={intelligence} />}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <div className="w-[280px] shrink-0 flex flex-col overflow-hidden">
-            <div className="shrink-0 flex gap-1 px-3 py-2.5 border-b border-gray-100 bg-white">
-              {(['chat', 'timeline'] as RightTab[]).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setRightTab(tab)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all capitalize ${
-                    rightTab === tab
-                      ? 'bg-brand-light text-brand border border-brand/20'
-                      : 'text-ink-4 hover:text-ink-2 hover:bg-off-white'
-                  }`}
-                >
-                  {tab === 'chat' ? <MessageSquare size={12} /> : <Clock size={12} />}
-                  {tab === 'chat' ? 'AI Chat' : 'Timeline'}
-                </button>
-              ))}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              {rightTab === 'chat' && <AIChatPanel meetingId={id} className="h-full" />}
-              {rightTab === 'timeline' && <TimelineTab intelligence={intelligence} />}
-            </div>
-          </div>
         </div>
 
-        {/* Mobile: single panel based on tab */}
+        {/* Mobile: single panel based on tab selection */}
         <div className="lg:hidden h-full">
           {mobilePanel === 'transcript' && (
             <TranscriptPanel segments={segments} status={status} connectionState={connectionState} className="h-full" />
           )}
           {mobilePanel === 'summary' && (
-            <InsightsPanel intelligence={intelligence} isLive={isLive} className="h-full" />
+            <InsightsPanel
+              intelligence={intelligence}
+              isLive={isLive}
+              meetingType={meeting?.meeting_type}
+              checkedItems={checkedItems}
+              onToggleItem={toggleItem}
+              className="h-full"
+            />
           )}
           {mobilePanel === 'chat' && (
             <AIChatPanel meetingId={id} className="h-full" />

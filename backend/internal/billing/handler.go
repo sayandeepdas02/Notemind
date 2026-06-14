@@ -1,12 +1,14 @@
 package billing
 
 import (
+	"database/sql"
 	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	"notemind/internal/db"
 	"notemind/pkg/logger"
 )
 
@@ -40,19 +42,52 @@ func (h *Handler) HandleWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"received": true})
 }
 
-// GET /billing/status
-// Protected — returns the current billing plan for the authenticated user's workspace.
+// GET /billing/status?workspace_id=<uuid>
+// Protected — returns the persisted billing plan and status for the workspace.
 func (h *Handler) GetStatus(c *gin.Context) {
 	userID := c.GetString("user_id")
+	workspaceID := c.Query("workspace_id")
+	if workspaceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workspace_id query parameter is required"})
+		return
+	}
 
-	// TODO: enforce plan limits — query workspace_billing for the user's active workspace
-	_ = userID
-	c.JSON(http.StatusOK, gin.H{"plan": "free", "status": "active"})
+	var isMember bool
+	err := db.DB.QueryRowContext(c.Request.Context(), `
+		SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2)
+	`, workspaceID, userID).Scan(&isMember)
+	if err != nil {
+		logger.L.Error("billing status: membership check failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify workspace membership"})
+		return
+	}
+	if !isMember {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this workspace"})
+		return
+	}
+
+	var plan, status string
+	err = db.DB.QueryRowContext(c.Request.Context(), `
+		SELECT plan_id, status FROM workspace_billing WHERE workspace_id = $1
+	`, workspaceID).Scan(&plan, &status)
+	if err == sql.ErrNoRows {
+		c.JSON(http.StatusOK, gin.H{"plan": "free", "status": "active"})
+		return
+	}
+	if err != nil {
+		logger.L.Error("billing status: db query failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch billing status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"plan": plan, "status": status})
 }
 
 // POST /billing/checkout
 // Protected — creates a Stripe Checkout session for the authenticated user.
 func (h *Handler) CreateCheckout(c *gin.Context) {
+	userID := c.GetString("user_id")
+
 	var req struct {
 		WorkspaceID string `json:"workspace_id" binding:"required"`
 		PriceID     string `json:"price_id" binding:"required"`
@@ -62,16 +97,46 @@ func (h *Handler) CreateCheckout(c *gin.Context) {
 		return
 	}
 
-	// TODO: create Stripe checkout session via stripe.CheckoutSessions.New
-	// Returning a placeholder until Stripe integration is wired per plan enforcement spec.
-	c.JSON(http.StatusOK, gin.H{
-		"url": h.frontendURL + "/dashboard/billing?checkout=pending",
-	})
+	var isMember bool
+	err := db.DB.QueryRowContext(c.Request.Context(), `
+		SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2)
+	`, req.WorkspaceID, userID).Scan(&isMember)
+	if err != nil {
+		logger.L.Error("checkout: membership check failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify workspace membership"})
+		return
+	}
+	if !isMember {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this workspace"})
+		return
+	}
+
+	var userEmail string
+	err = db.DB.QueryRowContext(c.Request.Context(), `SELECT email FROM users WHERE id = $1`, userID).Scan(&userEmail)
+	if err != nil {
+		logger.L.Error("checkout: user email lookup failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up user"})
+		return
+	}
+
+	successURL := h.frontendURL + "/dashboard/billing?checkout=success"
+	cancelURL := h.frontendURL + "/dashboard/billing?checkout=cancelled"
+
+	url, err := h.svc.CreateCheckoutSession(c.Request.Context(), req.WorkspaceID, userEmail, req.PriceID, successURL, cancelURL)
+	if err != nil {
+		logger.L.Error("checkout: stripe session failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create checkout session"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
 // POST /billing/portal
 // Protected — creates a Stripe customer portal session for managing subscriptions.
 func (h *Handler) CreatePortal(c *gin.Context) {
+	userID := c.GetString("user_id")
+
 	var req struct {
 		WorkspaceID string `json:"workspace_id" binding:"required"`
 	}
@@ -80,8 +145,27 @@ func (h *Handler) CreatePortal(c *gin.Context) {
 		return
 	}
 
-	// TODO: create Stripe billing portal session via stripe.BillingPortalSessions.New
-	c.JSON(http.StatusOK, gin.H{
-		"url": h.frontendURL + "/dashboard/billing",
-	})
+	var isMember bool
+	err := db.DB.QueryRowContext(c.Request.Context(), `
+		SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2)
+	`, req.WorkspaceID, userID).Scan(&isMember)
+	if err != nil {
+		logger.L.Error("portal: membership check failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to verify workspace membership"})
+		return
+	}
+	if !isMember {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not a member of this workspace"})
+		return
+	}
+
+	returnURL := h.frontendURL + "/dashboard/billing"
+	url, err := h.svc.CreatePortalSession(c.Request.Context(), req.WorkspaceID, returnURL)
+	if err != nil {
+		logger.L.Error("portal: stripe session failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create portal session"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }

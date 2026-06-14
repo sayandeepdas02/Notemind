@@ -4,31 +4,63 @@
 // Displays streaming-ready structured summaries, decisions, and action items
 // Empty state adapts to live vs. post-meeting context
 
-import { FileText, Target, CheckCircle2, Users, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { FileText, Target, CheckCircle2, Users, Loader2, Sparkles, AlertCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { MeetingIntelligence, ActionItem } from '@/types/api';
 
 // ── Action Item Card ─────────────────────────────────────────
 
-function ActionItemCard({ item }: { item: ActionItem }) {
+interface ActionItemCardProps {
+  item: ActionItem;
+  checked?: boolean;
+  onToggle?: () => void;
+}
+
+function ActionItemCard({ item, checked, onToggle }: ActionItemCardProps) {
+  const isClickable = typeof onToggle === 'function';
   return (
-    <div className="flex gap-3 p-3.5 rounded-xl border border-border bg-background group hover:border-accent/40 transition-colors cursor-default">
-      <div className="w-4 h-4 rounded border-2 border-border mt-0.5 shrink-0 group-hover:border-accent transition-colors" />
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground leading-snug">{item.task}</p>
-        <div className="flex items-center gap-3 mt-1.5">
+    <div
+      onClick={onToggle}
+      className={cn(
+        "flex gap-3 p-3.5 rounded-xl border transition-all cursor-default select-none",
+        checked
+          ? "border-brand-light bg-brand-pale/50 opacity-60"
+          : "border-border bg-background hover:border-accent/40 group",
+        isClickable && "cursor-pointer"
+      )}
+    >
+      <div
+        className={cn(
+          "w-4.5 h-4.5 rounded border-2 mt-0.5 shrink-0 flex items-center justify-center transition-colors",
+          checked
+            ? "bg-brand border-brand"
+            : "border-border group-hover:border-accent"
+        )}
+      >
+        {checked && <Check size={11} className="text-white" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p
+          className={cn(
+            "text-sm font-medium leading-snug",
+            checked ? "line-through text-ink-4" : "text-ink"
+          )}
+        >
+          {item.task}
+        </p>
+        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
           {item.owner && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-ink-4 flex items-center gap-1">
               <Users size={11} /> {item.owner}
             </span>
           )}
           {item.deadline && (
-            <span className="text-xs text-muted-foreground">{item.deadline}</span>
+            <span className="text-xs text-ink-4">{item.deadline}</span>
           )}
           {item.priority && (
             <span className={cn(
               'text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded',
-              item.priority === 'high' && 'bg-red-500/10 text-red-400',
+              item.priority === 'high' && 'bg-red-500/10 text-red-500',
               item.priority === 'medium' && 'bg-gray-100 text-ink-4',
               item.priority === 'low' && 'bg-brand/10 text-brand',
             )}>
@@ -45,8 +77,8 @@ function ActionItemCard({ item }: { item: ActionItem }) {
 
 function SectionHeader({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
   return (
-    <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2 mb-3">
-      <Icon size={12} />
+    <h3 className="text-[10px] font-bold uppercase tracking-widest text-ink-4 flex items-center gap-2 mb-3">
+      <Icon size={12} className="text-brand" />
       {label}
     </h3>
   );
@@ -60,26 +92,26 @@ interface InsightsEmptyProps {
 
 function InsightsEmptyState({ isLive }: InsightsEmptyProps) {
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground px-6 gap-4">
-      <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+    <div className="h-full flex flex-col items-center justify-center text-center text-ink-4 px-6 gap-4 py-20">
+      <div className="w-12 h-12 rounded-xl bg-brand-light flex items-center justify-center">
         {isLive ? (
-          <Sparkles size={20} className="text-accent animate-pulse" />
+          <Sparkles size={20} className="text-brand animate-pulse" />
         ) : (
-          <FileText size={20} className="text-muted-foreground" />
+          <FileText size={20} className="text-ink-5" />
         )}
       </div>
       <div>
-        <p className="text-sm font-medium text-foreground mb-1">
+        <p className="text-sm font-medium text-ink mb-1">
           {isLive ? 'Generating insights...' : 'No insights available'}
         </p>
-        <p className="text-xs leading-relaxed">
+        <p className="text-xs leading-relaxed text-ink-4 max-w-[280px]">
           {isLive
             ? 'Structured summaries, decisions, and action items will appear here as soon as the meeting ends.'
             : 'AI processing may still be in progress.'}
         </p>
       </div>
       {isLive && (
-        <Loader2 size={16} className="animate-spin text-accent" />
+        <Loader2 size={16} className="animate-spin text-brand" />
       )}
     </div>
   );
@@ -88,7 +120,15 @@ function InsightsEmptyState({ isLive }: InsightsEmptyProps) {
 // ── Standup View ─────────────────────────────────────────────
 // Key points from standup meetings follow "Name: Yesterday X. Today Y. Blocked Z." format.
 
-function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
+function StandupView({
+  intelligence,
+  checkedItems,
+  onToggleItem,
+}: {
+  intelligence: MeetingIntelligence;
+  checkedItems?: Set<number>;
+  onToggleItem?: (i: number) => void;
+}) {
   const yesterday = intelligence.key_points.filter(kp =>
     kp.toLowerCase().includes('yesterday') || kp.toLowerCase().includes('did ')
   );
@@ -102,6 +142,10 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
     !item.task.toLowerCase().includes('blocker') && !item.task.toLowerCase().includes('blocked')
   );
 
+  const getOriginalIndex = (item: ActionItem) => {
+    return intelligence.action_items.findIndex(x => x.task === item.task);
+  };
+
   // Fallback: if we can't split, show all key_points as "updates"
   const allPoints = intelligence.key_points;
   const canSplit = yesterday.length > 0 || today.length > 0;
@@ -111,7 +155,7 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
       {intelligence.summary && (
         <div>
           <SectionHeader icon={FileText} label="Team summary" />
-          <div className="bg-background border border-border rounded-xl p-4 text-sm text-foreground/80 leading-relaxed">
+          <div className="bg-background border border-border rounded-xl p-4 text-sm text-ink-2 leading-relaxed">
             {intelligence.summary}
           </div>
         </div>
@@ -124,7 +168,7 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
               <SectionHeader icon={CheckCircle2} label="Yesterday" />
               <ul className="space-y-2.5">
                 {yesterday.map((kp, i) => (
-                  <li key={i} className="flex gap-3 text-sm text-foreground/80">
+                  <li key={i} className="flex gap-3 text-sm text-ink-2">
                     <span className="text-brand mt-0.5 shrink-0">✓</span>
                     <span className="leading-relaxed">{kp}</span>
                   </li>
@@ -137,8 +181,8 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
               <SectionHeader icon={Target} label="Today" />
               <ul className="space-y-2.5">
                 {today.map((kp, i) => (
-                  <li key={i} className="flex gap-3 text-sm text-foreground/80">
-                    <span className="text-accent mt-0.5 shrink-0">›</span>
+                  <li key={i} className="flex gap-3 text-sm text-ink-2">
+                    <span className="text-brand-mid mt-0.5 shrink-0">›</span>
                     <span className="leading-relaxed">{kp}</span>
                   </li>
                 ))}
@@ -151,8 +195,8 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
           <SectionHeader icon={Target} label="Updates" />
           <ul className="space-y-2.5">
             {allPoints.map((kp, i) => (
-              <li key={i} className="flex gap-3 text-sm text-foreground/80">
-                <span className="text-accent mt-0.5 shrink-0">›</span>
+              <li key={i} className="flex gap-3 text-sm text-ink-2">
+                <span className="text-brand-mid mt-0.5 shrink-0">›</span>
                 <span className="leading-relaxed">{kp}</span>
               </li>
             ))}
@@ -164,9 +208,17 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
         <div>
           <SectionHeader icon={AlertCircle} label="Blockers" />
           <div className="space-y-2">
-            {blockers.map((item, i) => (
-              <ActionItemCard key={i} item={item} />
-            ))}
+            {blockers.map((item, idx) => {
+              const origIdx = getOriginalIndex(item);
+              return (
+                <ActionItemCard
+                  key={idx}
+                  item={item}
+                  checked={checkedItems?.has(origIdx)}
+                  onToggle={onToggleItem ? () => onToggleItem(origIdx) : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -175,9 +227,17 @@ function StandupView({ intelligence }: { intelligence: MeetingIntelligence }) {
         <div>
           <SectionHeader icon={CheckCircle2} label={`Action items (${otherItems.length})`} />
           <div className="space-y-2">
-            {otherItems.map((item, i) => (
-              <ActionItemCard key={i} item={item} />
-            ))}
+            {otherItems.map((item, idx) => {
+              const origIdx = getOriginalIndex(item);
+              return (
+                <ActionItemCard
+                  key={idx}
+                  item={item}
+                  checked={checkedItems?.has(origIdx)}
+                  onToggle={onToggleItem ? () => onToggleItem(origIdx) : undefined}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -192,20 +252,29 @@ interface InsightsPanelProps {
   isLive: boolean;
   meetingType?: string;
   className?: string;
+  checkedItems?: Set<number>;
+  onToggleItem?: (i: number) => void;
 }
 
-export function InsightsPanel({ intelligence, isLive, meetingType, className }: InsightsPanelProps) {
+export function InsightsPanel({
+  intelligence,
+  isLive,
+  meetingType,
+  className,
+  checkedItems,
+  onToggleItem,
+}: InsightsPanelProps) {
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn('flex flex-col h-full bg-white', className)}>
       {/* Header */}
-      <div className="shrink-0 px-5 py-3.5 border-b border-border flex items-center justify-between bg-background/50">
+      <div className="shrink-0 px-5 py-3.5 border-b border-border flex items-center justify-between bg-white">
         <div className="flex items-center gap-2">
-          <Sparkles size={15} className="text-accent" />
-          <h2 className="text-sm font-semibold text-foreground">AI Insights</h2>
+          <Sparkles size={15} className="text-brand" />
+          <h2 className="text-sm font-semibold text-ink">AI Insights</h2>
         </div>
         {isLive && !intelligence && (
-          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Loader2 size={12} className="animate-spin" />
+          <span className="text-xs text-ink-4 flex items-center gap-1.5">
+            <Loader2 size={12} className="animate-spin text-brand" />
             Analyzing
           </span>
         )}
@@ -216,13 +285,17 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
         {!intelligence ? (
           <InsightsEmptyState isLive={isLive} />
         ) : meetingType === 'standup' ? (
-          <StandupView intelligence={intelligence} />
+          <StandupView
+            intelligence={intelligence}
+            checkedItems={checkedItems}
+            onToggleItem={onToggleItem}
+          />
         ) : (
           <div className="space-y-8">
             {/* Executive Summary */}
             <div>
               <SectionHeader icon={FileText} label="Executive Summary" />
-              <div className="bg-background border border-border rounded-xl p-4 text-sm text-foreground/80 leading-relaxed">
+              <div className="bg-background border border-border rounded-xl p-4 text-sm text-ink-2 leading-relaxed">
                 {intelligence.summary || 'No summary generated.'}
               </div>
             </div>
@@ -233,8 +306,8 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
                 <SectionHeader icon={Target} label="Key Points" />
                 <ul className="space-y-2.5">
                   {intelligence.key_points.map((kp, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-foreground/80">
-                      <span className="text-accent mt-0.5 shrink-0">›</span>
+                    <li key={i} className="flex gap-3 text-sm text-ink-2">
+                      <span className="text-brand-mid mt-0.5 shrink-0">›</span>
                       <span className="leading-relaxed">{kp}</span>
                     </li>
                   ))}
@@ -250,10 +323,10 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
                   {intelligence.decisions.map((dec, i) => (
                     <div
                       key={i}
-                      className="flex items-start gap-3 p-3.5 rounded-xl border border-brand/15 bg-brand/5"
+                      className="flex items-start gap-3 p-3.5 rounded-xl border border-brand/15 bg-brand-pale/50"
                     >
                       <CheckCircle2 size={14} className="text-brand mt-0.5 shrink-0" />
-                      <p className="text-sm text-foreground/90 leading-snug">{dec}</p>
+                      <p className="text-sm text-ink leading-snug">{dec}</p>
                     </div>
                   ))}
                 </div>
@@ -266,7 +339,12 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
                 <SectionHeader icon={CheckCircle2} label={`Action Items (${intelligence.action_items.length})`} />
                 <div className="space-y-2">
                   {intelligence.action_items.map((item, i) => (
-                    <ActionItemCard key={i} item={item} />
+                    <ActionItemCard
+                      key={i}
+                      item={item}
+                      checked={checkedItems?.has(i)}
+                      onToggle={onToggleItem ? () => onToggleItem(i) : undefined}
+                    />
                   ))}
                 </div>
               </div>
@@ -280,9 +358,9 @@ export function InsightsPanel({ intelligence, isLive, meetingType, className }: 
                   {intelligence.participants.map((p, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-3 border border-border rounded-full text-xs font-medium text-foreground"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-off-white border border-border rounded-full text-xs font-medium text-ink-2"
                     >
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-accent to-purple-500 flex items-center justify-center text-[8px] font-bold text-white">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-brand to-purple-500 flex items-center justify-center text-[8px] font-bold text-white">
                         {p.charAt(0).toUpperCase()}
                       </div>
                       {p}

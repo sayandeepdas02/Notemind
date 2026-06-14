@@ -5,7 +5,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { createSSEConnection } from '@/lib/api';
+import { api, createSSEConnection } from '@/lib/api';
 import type { MeetingStatus, TranscriptSegment, SSEEvent } from '@/types/api';
 
 function mergeSegments(
@@ -68,6 +68,26 @@ export function useMeetingStream({
     sseRef.current = null;
     setConnectionState('closed');
   }, []);
+
+  // Sync status if initialStatus changes
+  useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus]);
+
+  // Fetch transcripts for completed/ended meetings
+  useEffect(() => {
+    if (ENDED_STATUSES.has(status) && segments.length === 0) {
+      api.get<TranscriptSegment[]>(`/meetings/${meetingId}/transcripts`)
+        .then(data => {
+          if (data) setSegments(data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch transcripts:', err);
+        });
+    }
+  }, [meetingId, status, segments.length]);
 
   useEffect(() => {
     // If already ended on load, skip SSE connection
