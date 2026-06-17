@@ -863,17 +863,17 @@ function FAQ() {
 
   return (
     <section id="faq" className="bg-white py-24 px-6 lg:px-12">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <RevealWrapper>
           <div className="text-center mb-12">
             <SectionLabel text="FAQ" />
             <h2 className="font-serif text-[40px] md:text-[48px] text-ink mt-5 leading-tight tracking-tight">
-              Common questions
+              Frequesnt Asked Question
             </h2>
           </div>
         </RevealWrapper>
 
-        <div className="space-y-2">
+        <div className="mx-auto max-w-3xl space-y-2">
           {FAQS.map((faq, i) => (
             <RevealWrapper key={i} delay={i * 0.04}>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -1124,8 +1124,6 @@ export default function LandingPage() {
       <Hero />
       <LogoStrip />
       <FeaturesGrid />
-      <ForgottenToMemoryAnimation />
-      <MeetingHistorySecondBrainAnimation />
       <Testimonials />
       <Pricing />
       <FAQ />
