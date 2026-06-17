@@ -16,9 +16,9 @@ const PADDING = {
 };
 
 const VARIANTS = {
-  default: 'bg-white border border-gray-100 shadow-sm',
-  inset:   'bg-gray-50 border border-gray-200',
-  flat:    'bg-white border border-gray-100',
+  default: 'border border-white/80 bg-white/92 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm',
+  inset:   'border border-slate-200/80 bg-slate-50/90',
+  flat:    'border border-slate-200/70 bg-white/72',
 };
 
 export const Panel = forwardRef<HTMLDivElement, PanelProps>(
@@ -26,7 +26,7 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(
     return (
       <div
         ref={ref}
-        className={cn('rounded-2xl', VARIANTS[variant], PADDING[padding], className)}
+        className={cn('rounded-[26px]', VARIANTS[variant], PADDING[padding], className)}
         {...props}
       >
         {children}
@@ -50,8 +50,8 @@ export function PanelHeader({ title, description, action, icon, className }: Pan
       <div className="flex items-center gap-3 min-w-0">
         {icon && <div className="text-brand shrink-0">{icon}</div>}
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-gray-900 truncate">{title}</h2>
-          {description && <p className="text-xs text-gray-500 mt-0.5">{description}</p>}
+          <h2 className="text-sm font-semibold tracking-[-0.01em] text-gray-900 truncate">{title}</h2>
+          {description && <p className="mt-1 text-xs leading-5 text-gray-500">{description}</p>}
         </div>
       </div>
       {action && <div className="shrink-0">{action}</div>}

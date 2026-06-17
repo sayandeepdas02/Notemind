@@ -12,6 +12,7 @@ import type { User, Workspace, APIKey, CreateAPIKeyResponse } from '@/types/api'
 import { cn } from '@/lib/utils';
 import { Panel } from '@/components/ui/panel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardPage, PageHeader } from '@/components/dashboard/page';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 
@@ -845,14 +846,18 @@ export default function SettingsPage() {
 
   const setTab = (tab: Tab) => router.push(`/dashboard/settings?tab=${tab}`, { scroll: false });
 
-  if (!user) return <div className="p-6 space-y-4"><Skeleton className="h-8 w-40" /><Skeleton className="h-64 w-full" /></div>;
+  if (!user) return <DashboardPage className="space-y-4"><Skeleton className="h-8 w-40" /><Skeleton className="h-64 w-full" /></DashboardPage>;
 
   return (
-    <div className="p-5 lg:p-8 max-w-5xl mx-auto">
-      <h1 className="text-[20px] font-semibold text-ink mb-6">Settings</h1>
+    <DashboardPage className="max-w-6xl space-y-8">
+      <PageHeader
+        eyebrow="Controls"
+        title="Settings"
+        description="Manage workspace identity, integrations, API access, and account controls from one consistent surface."
+      />
 
       {/* Mobile scrollable chip row */}
-      <div className="flex md:hidden gap-2 overflow-x-auto pb-4 mb-6 scrollbar-hide">
+      <div className="scrollbar-hide mb-2 flex gap-2 overflow-x-auto pb-2 md:hidden">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
@@ -876,7 +881,7 @@ export default function SettingsPage() {
 
       <div className="flex gap-6">
         {/* Left nav — desktop */}
-        <nav className="hidden md:flex flex-col gap-0.5 w-48 shrink-0">
+        <nav className="hidden w-56 shrink-0 rounded-[28px] border border-white/80 bg-white/72 p-3 shadow-[0_18px_40px_rgba(15,23,42,0.05)] md:flex md:flex-col md:gap-1">
           {TABS.map(t => {
             const Icon = t.icon;
             const active = activeTab === t.id;
@@ -885,10 +890,10 @@ export default function SettingsPage() {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-left w-full transition-colors',
+                  'flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-[13px] font-medium transition-colors',
                   active
-                    ? 'bg-brand-light text-brand'
-                    : 'text-ink-4 hover:text-ink hover:bg-off-white',
+                    ? 'bg-slate-900 text-white'
+                    : 'text-ink-4 hover:bg-slate-50 hover:text-ink',
                   t.id === 'danger' && !active && 'hover:text-red-600'
                 )}
               >
@@ -912,6 +917,6 @@ export default function SettingsPage() {
           </Panel>
         </div>
       </div>
-    </div>
+    </DashboardPage>
   );
 }

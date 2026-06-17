@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import { TestimonialsColumn } from '@/components/ui/testimonials-columns';
 import type { Testimonial } from '@/components/ui/testimonials-columns';
-import { Features } from '@/components/ui/features-6';
 
 // ── Social icon SVGs (lucide-react v1.x dropped brand icons) ──
 
@@ -289,7 +288,6 @@ function ForgottenToMemoryAnimation() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-14 max-w-2xl mx-auto">
-          <SectionLabel text="Transformation" />
           <h2 className="font-serif text-[42px] md:text-[54px] text-white mt-5 mb-4 leading-[1.1] tracking-tight">
             Meetings are normally forgotten.<br />
             Notemind makes them permanent.
@@ -482,7 +480,6 @@ function MeetingHistorySecondBrainAnimation() {
 
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center mb-14 max-w-2xl mx-auto">
-          <SectionLabel text="The Second Brain" />
           <h2 className="font-serif text-[42px] md:text-[54px] text-white mt-5 mb-4 leading-[1.1] tracking-tight">
             Your entire meeting history,<br />
             becomes an AI-powered second brain.
@@ -1125,7 +1122,6 @@ export default function LandingPage() {
     <div className="text-ink selection:bg-brand-light">
       <Header />
       <Hero />
-      <Features />
       <LogoStrip />
       <FeaturesGrid />
       <ForgottenToMemoryAnimation />

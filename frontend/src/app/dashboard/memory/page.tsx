@@ -269,20 +269,20 @@ export default function AIMemoryPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden px-5 py-5 lg:px-8 lg:py-6">
       
       {/* Left: sessions history */}
-      <aside className="hidden md:flex flex-col w-64 shrink-0 border-r border-gray-100 bg-white">
-        <div className="p-4 border-b border-gray-100">
+      <aside className="hidden w-72 shrink-0 overflow-hidden rounded-l-[30px] border border-white/80 bg-[#f8fbff]/90 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur md:flex md:flex-col">
+        <div className="border-b border-slate-200/70 p-4">
           <button
             onClick={startNewConversation}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-brand hover:bg-brand-mid text-white rounded-xl text-[13px] font-semibold transition-colors shadow-sm"
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 px-3 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-slate-800"
           >
             <Plus size={14} />
             New conversation
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        <div className="flex-1 space-y-1.5 overflow-y-auto p-2.5">
           <div className="px-3 pt-2 pb-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-ink-5 flex items-center gap-1.5">
               <Clock size={11} /> Past Chats
@@ -299,8 +299,8 @@ export default function AIMemoryPage() {
                   className={cn(
                     "flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer group transition-all",
                     isActive
-                      ? "bg-brand-light text-brand"
-                      : "hover:bg-off-white text-ink-3 hover:text-ink"
+                      ? "bg-white text-brand shadow-[0_10px_28px_rgba(15,23,42,0.06)]"
+                      : "text-ink-3 hover:bg-white/80 hover:text-ink"
                   )}
                 >
                   <p className={cn("text-[13px] truncate flex-1 pr-2", isActive ? "font-semibold" : "font-medium")}>
@@ -323,10 +323,11 @@ export default function AIMemoryPage() {
       </aside>
 
       {/* Right: chat window */}
-      <div className="flex-1 flex flex-col min-w-0 bg-off-white">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-r-[30px] border border-l-0 border-white/80 bg-white/68 shadow-[0_20px_50px_rgba(15,23,42,0.06)] backdrop-blur">
         
         {/* Header */}
-        <div className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-white">
+        <div className="shrink-0 border-b border-slate-200/70 bg-white/75 px-5 py-4">
+          <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center shrink-0">
               <Brain size={16} className="text-brand animate-pulse" />
@@ -339,10 +340,11 @@ export default function AIMemoryPage() {
               <p className="text-[11px] text-ink-5">Semantics search & reasoning across all workspace intelligence</p>
             </div>
           </div>
+          </div>
         </div>
 
         {/* Messages list */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">
           
           {/* Loading history spinner */}
           {loadingHistory && (
@@ -397,7 +399,7 @@ export default function AIMemoryPage() {
         )}
 
         {/* Input box */}
-        <div className="shrink-0 border-t border-gray-100 p-4 bg-white">
+        <div className="shrink-0 border-t border-slate-200/70 bg-white/82 p-4">
           <div className="flex items-end gap-2.5 max-w-3xl mx-auto">
             <textarea
               ref={textareaRef}

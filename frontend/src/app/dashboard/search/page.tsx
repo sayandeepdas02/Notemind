@@ -7,6 +7,7 @@ import { api, APIError } from '@/lib/api';
 import type { SearchResult, SearchResponse } from '@/types/api';
 import { Panel } from '@/components/ui/panel';
 import { SearchResultSkeleton } from '@/components/ui/skeleton';
+import { DashboardPage, PageHeader, SectionLabel } from '@/components/dashboard/page';
 
 // ── Result Card ───────────────────────────────────────────────
 
@@ -123,22 +124,33 @@ export default function GlobalSearchPage() {
   );
 
   return (
-    <div className="p-5 lg:p-8 max-w-4xl mx-auto flex flex-col gap-8 min-h-full">
-
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground mb-1 flex items-center gap-2.5">
-          <SearchIcon size={22} className="text-accent" />
-          Global Search
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Semantic search across all meetings, decisions, and action items.
-        </p>
-      </div>
+    <DashboardPage className="flex min-h-full max-w-5xl flex-col gap-8">
+      <PageHeader
+        eyebrow="Knowledge"
+        title={
+          <span className="flex items-center gap-2.5">
+            <SearchIcon size={24} className="text-accent" />
+            Global Search
+          </span>
+        }
+        description="Search across meetings, decisions, and action items with a calmer, more readable results layout."
+      />
 
       {/* Search Input */}
-      <form onSubmit={handleSearch}>
-        <div className="relative">
+      <Panel padding="lg" className="space-y-6">
+        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+          <div>
+            <SectionLabel>Ask naturally</SectionLabel>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Query what was decided, which action items were assigned, or where a topic came up.
+            </p>
+          </div>
+          <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm text-ink-4">
+            Try: <span className="text-ink-2">&quot;What did we decide about pricing?&quot;</span>
+          </div>
+        </div>
+        <form onSubmit={handleSearch}>
+          <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
             <SearchIcon size={18} className="text-muted-foreground" />
           </div>
@@ -147,17 +159,18 @@ export default function GlobalSearchPage() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={`Try "What did we decide about pricing?" or "Action items for Q2"`}
-            className="w-full bg-surface-2 border border-border text-foreground rounded-xl pl-11 pr-28 py-3.5 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all placeholder:text-muted-foreground shadow-sm"
+            className="w-full rounded-[22px] border border-border bg-white pl-11 pr-28 py-4 text-sm text-foreground shadow-[0_16px_35px_rgba(15,23,42,0.05)] transition-all placeholder:text-muted-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20"
           />
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="absolute right-2 top-2 bottom-2 bg-accent hover:bg-accent-hover text-white px-5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 flex items-center justify-center"
+            className="absolute bottom-2 right-2 top-2 flex items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:opacity-50"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : 'Search'}
           </button>
         </div>
-      </form>
+        </form>
+      </Panel>
 
       {/* Results area */}
       <div className="flex-1">
@@ -176,7 +189,7 @@ export default function GlobalSearchPage() {
 
         {/* Empty state */}
         {!loading && hasSearched && results.length === 0 && !error && (
-          <div className="text-center py-16 border border-dashed border-border rounded-2xl">
+          <div className="rounded-[26px] border border-dashed border-border bg-white/76 py-16 text-center">
             <SearchIcon size={32} className="text-muted-foreground opacity-20 mx-auto mb-4" />
             <p className="text-sm font-medium text-foreground mb-1">No results for &quot;{lastQuery}&quot;</p>
             <p className="text-xs text-muted-foreground">Try different keywords or a broader topic.</p>
@@ -185,7 +198,7 @@ export default function GlobalSearchPage() {
 
         {/* Pre-search idle state */}
         {!hasSearched && (
-          <div className="text-center py-16 border border-dashed border-border rounded-2xl">
+          <div className="rounded-[26px] border border-dashed border-border bg-white/76 py-16 text-center">
             <SearchIcon size={32} className="text-muted-foreground opacity-20 mx-auto mb-4" />
             <p className="text-sm font-medium text-foreground mb-1">Search your organization&apos;s memory</p>
             <p className="text-xs text-muted-foreground">Every meeting, decision, and action item is searchable.</p>
@@ -201,6 +214,6 @@ export default function GlobalSearchPage() {
           </div>
         )}
       </div>
-    </div>
+    </DashboardPage>
   );
 }

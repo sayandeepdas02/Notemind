@@ -111,6 +111,10 @@
   --shadow-card:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
   --shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
   --shadow-card-lg: 0 24px 80px rgba(15,26,20,0.08);
+  --dashboard-wash:
+    radial-gradient(circle at top left, rgba(28, 128, 242, 0.14), transparent 32%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 24%),
+    linear-gradient(180deg, #f8fbff 0%, #f4f7fb 48%, #f7f9fc 100%);
 }
 
 /* ── Base ────────────────────────────────────────────────────── */
@@ -200,4 +204,16 @@ html, body {
 
 .section-divider {
   border-top: 1px solid rgba(37,99,235,0.12);
+}
+
+.dashboard-surface {
+  background: var(--dashboard-wash);
+}
+
+.dashboard-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
 }

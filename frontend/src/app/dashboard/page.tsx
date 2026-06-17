@@ -13,6 +13,8 @@ import { api, APIError } from '@/lib/api';
 import type { Meeting, MeetingJoinResponse, MeetingProvider } from '@/types/api';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { MeetingCardSkeleton } from '@/components/ui/skeleton';
+import { Panel } from '@/components/ui/panel';
+import { DashboardPage, PageHeader, SectionLabel, StatCard, StatGrid } from '@/components/dashboard/page';
 import { cn } from '@/lib/utils';
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -100,7 +102,7 @@ function MeetingCard({ meeting, index }: { meeting: Meeting; index: number }) {
       transition={{ duration: 0.3, delay: index * 0.04 }}
     >
       <Link href={`/dashboard/meetings/${meeting.id}`} className="group block">
-        <div className="bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 hover:shadow-sm hover:-translate-y-px transition-all duration-200">
+        <div className="rounded-[24px] border border-white/80 bg-white/92 p-5 shadow-[0_16px_40px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-[0_20px_48px_rgba(15,23,42,0.09)]">
           <div className="flex items-center justify-between mb-3 gap-2">
             <ProviderBadge provider={meeting.provider} />
             <StatusBadge status={meeting.status} />
@@ -186,7 +188,7 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
     return (
       <button
         onClick={() => setShowForm(true)}
-        className="flex items-center gap-2 bg-brand hover:bg-brand-mid text-white text-[13px] font-medium px-4 py-2 rounded-lg transition-colors"
+        className="flex items-center gap-2 rounded-2xl bg-[linear-gradient(135deg,#1C80F2_0%,#4B94F5_100%)] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_16px_30px_rgba(28,128,242,0.24)] transition-transform hover:-translate-y-0.5"
       >
         <Play size={13} fill="currentColor" />
         Join a meeting
@@ -195,7 +197,7 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm mb-6">
+    <Panel className="mb-6" padding="md">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[13px] font-semibold text-ink">Join a meeting</h3>
         <button
@@ -254,7 +256,7 @@ function JoinForm({ onJoined }: { onJoined: (id: string) => void }) {
           {starting ? 'Joining...' : 'Join now →'}
         </button>
       </form>
-    </div>
+    </Panel>
   );
 }
 
@@ -298,45 +300,77 @@ export default function DashboardHome() {
   ];
 
   return (
-    <div className="p-5 lg:p-8 max-w-6xl mx-auto">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-[20px] font-semibold text-ink">Meetings</h1>
-        <JoinForm onJoined={handleJoined} />
-      </div>
+    <DashboardPage className="space-y-8">
+      <PageHeader
+        eyebrow="Overview"
+        title="Meetings"
+        description="Track live calls, uploaded recordings, and the knowledge flowing into your workspace."
+        action={<JoinForm onJoined={handleJoined} />}
+      />
+
+      <Panel padding="lg" className="overflow-hidden">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand/15 bg-brand-light px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+              Meeting cockpit
+            </div>
+            <h2 className="text-[26px] font-semibold tracking-[-0.04em] text-ink sm:text-[30px]">
+              Keep capture, review, and follow-up in one calm workspace.
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-ink-4 sm:text-[15px]">
+              Join calls, upload recordings, and scan recent sessions without jumping between disconnected tools.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[360px] lg:max-w-[440px]">
+            <div className="rounded-[22px] border border-slate-200/70 bg-slate-50/90 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-5">Live capture</p>
+              <p className="mt-2 text-sm text-ink-3">Start a bot instantly from Meet or Zoom.</p>
+            </div>
+            <div className="rounded-[22px] border border-slate-200/70 bg-slate-50/90 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-5">Fast review</p>
+              <p className="mt-2 text-sm text-ink-3">Spot summaries, status, and outcomes at a glance.</p>
+            </div>
+            <div className="rounded-[22px] border border-slate-200/70 bg-slate-50/90 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-5">Shared memory</p>
+              <p className="mt-2 text-sm text-ink-3">Search decisions and action items later.</p>
+            </div>
+          </div>
+        </div>
+      </Panel>
 
       {/* Quick stats */}
       {!loadingMeetings && meetings.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        <StatGrid>
           {[
             { label: 'Total', value: meetings.length },
             { label: 'Completed', value: meetings.filter(m => ['completed','ended'].includes(m.status)).length },
             { label: 'Live now', value: liveCount },
             { label: 'This week', value: meetings.filter(m => Date.now() - new Date(m.created_at).getTime() < 7 * 86400000).length },
           ].map(stat => (
-            <div key={stat.label} className="bg-white border border-gray-100 rounded-xl p-4">
-              <p className="font-serif text-[30px] text-ink leading-none">{stat.value}</p>
-              <p className="text-[12px] text-ink-5 mt-1.5">{stat.label}</p>
-            </div>
+            <StatCard key={stat.label} label={stat.label} value={stat.value} />
           ))}
-        </div>
+        </StatGrid>
       )}
 
       {/* Meeting list */}
       <section id="meetings">
-        <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-5">Recent meetings</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <SectionLabel>Recent meetings</SectionLabel>
+            <p className="mt-1 text-sm text-ink-4">A tighter view of the latest recordings, uploads, and live sessions.</p>
+          </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+            <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-white/80 p-1">
               {FILTER_TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setFilter(tab.id)}
                   className={cn(
-                    'px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors flex items-center gap-1.5',
+                    'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-medium transition-colors',
                     filter === tab.id
-                      ? 'bg-white text-ink shadow-sm border border-gray-200'
+                      ? 'bg-slate-900 text-white shadow-sm'
                       : 'text-ink-4 hover:text-ink-2'
                   )}
                 >
@@ -354,7 +388,7 @@ export default function DashboardHome() {
               onClick={fetchMeetings}
               disabled={loadingMeetings}
               aria-label="Refresh meetings"
-              className="p-2 text-ink-4 hover:text-ink-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="rounded-2xl border border-slate-200 bg-white/80 p-2 text-ink-4 transition-colors hover:text-ink-2 disabled:opacity-50"
             >
               <RefreshCw size={13} className={loadingMeetings ? 'animate-spin' : ''} />
             </button>
@@ -363,14 +397,14 @@ export default function DashboardHome() {
 
         {/* Skeletons */}
         {loadingMeetings && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => <MeetingCardSkeleton key={i} />)}
           </div>
         )}
 
         {/* Error */}
         {meetingsError && (
-          <div className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          <div className="flex items-center justify-between gap-4 rounded-[24px] border border-red-200 bg-red-50 p-4 text-red-700">
             <div className="flex items-center gap-3 text-[13px]">
               <AlertCircle size={16} />
               <span>{meetingsError}</span>
@@ -383,7 +417,7 @@ export default function DashboardHome() {
 
         {/* Empty state */}
         {!loadingMeetings && !meetingsError && meetings.length === 0 && (
-          <div className="border-2 border-dashed border-gray-200 rounded-2xl p-16 text-center">
+          <div className="rounded-[28px] border border-dashed border-slate-300 bg-white/72 p-16 text-center">
             <div className="w-16 h-16 rounded-full bg-brand-light flex items-center justify-center mx-auto mb-5">
               <Calendar size={26} className="text-brand" />
             </div>
@@ -412,7 +446,7 @@ export default function DashboardHome() {
 
         {/* No filter results */}
         {!loadingMeetings && !meetingsError && meetings.length > 0 && filtered.length === 0 && (
-          <div className="text-center py-16">
+          <div className="py-16 text-center">
             <Search size={26} className="text-ink-5 mx-auto mb-3" />
             <p className="text-ink-4 text-[14px]">No {filter} meetings found.</p>
           </div>
@@ -420,13 +454,13 @@ export default function DashboardHome() {
 
         {/* Meeting grid */}
         {!loadingMeetings && filtered.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((m, i) => (
               <MeetingCard key={m.id} meeting={m} index={i} />
             ))}
           </div>
         )}
       </section>
-    </div>
+    </DashboardPage>
   );
 }
