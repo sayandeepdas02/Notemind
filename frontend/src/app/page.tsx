@@ -975,26 +975,11 @@ function CTASection() {
 // ── Footer ────────────────────────────────────────────────────
 
 function Footer() {
-  const productLinks = [
+  const footerLinks = [
     { label: 'Features',     href: '#features' },
     { label: 'Pricing',      href: '#pricing' },
-    { label: 'Integrations', href: '#' },
-    { label: 'Changelog',    href: '#' },
-    { label: 'Roadmap',      href: '#' },
-  ];
-  const companyLinks = [
-    { label: 'About',    href: '#faq' },
-    { label: 'Blog',     href: '#' },
-    { label: 'Careers',  href: '#' },
-    { label: 'Contact',  href: '#' },
-    { label: 'Press',    href: '#' },
-  ];
-  const developerLinks = [
-    { label: 'API Docs',    href: '#' },
-    { label: 'SDK Reference', href: '#' },
-    { label: 'Webhooks',    href: '#' },
-    { label: 'Status Page', href: '#' },
-    { label: 'Open Source', href: '#' },
+    { label: 'Testimonials', href: '#testimonials' },
+    { label: 'FAQ',          href: '#faq' },
   ];
 
   return (
@@ -1011,10 +996,8 @@ function Footer() {
 
       {/* Content — sits above the watermark */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12 pt-16">
-        {/* Main grid: logo col + 3 nav columns */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)] mb-12">
 
-          {/* Column 1: Logo + description + socials */}
           <div>
             <div className="flex items-center gap-3 mb-4">
               <Logo size="sm" className="text-white" />
@@ -1040,35 +1023,10 @@ function Footer() {
             </div>
           </div>
 
-          {/* Column 2: Product */}
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Product</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Navigation</p>
             <ul className="space-y-3">
-              {productLinks.map(({ label, href }) => (
-                <li key={label}>
-                  <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Column 3: Company */}
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Company</p>
-            <ul className="space-y-3">
-              {companyLinks.map(({ label, href }) => (
-                <li key={label}>
-                  <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Column 4: Developers */}
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35 mb-4">Developers</p>
-            <ul className="space-y-3">
-              {developerLinks.map(({ label, href }) => (
+              {footerLinks.map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-[14px] text-white/70 hover:text-white transition-colors">{label}</a>
                 </li>
