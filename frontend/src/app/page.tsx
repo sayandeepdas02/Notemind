@@ -668,6 +668,7 @@ export default function LandingPage() {
       <Hero />
       <LogoStrip />
       <FeaturesGrid />
+
       <Testimonials />
       <Pricing />
       <FAQ />

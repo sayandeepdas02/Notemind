@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle, Mail } from 'lucide-react';
 import { api, storeSession } from '@/lib/api';
 import type { AuthResponse } from '@/types/api';
 
@@ -10,10 +10,19 @@ function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState<string | null>(null);
 
   useEffect(() => {
     const token = searchParams.get('token');
     const errorParam = searchParams.get('error');
+    const sent = searchParams.get('sent');
+    const email = searchParams.get('email');
+
+    // Email magic-link was sent — show confirmation, no token yet
+    if (sent === '1') {
+      setEmailSent(email ?? 'your inbox');
+      return;
+    }
 
     if (errorParam) {
       setError(
@@ -52,6 +61,28 @@ function CallbackContent() {
 
     finish();
   }, [searchParams, router]);
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-sm">
+          <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center mx-auto mb-4">
+            <Mail size={24} className="text-brand" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-2">Check your inbox</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            We sent a sign-in link to <strong>{emailSent}</strong>. Click the link to continue.
+          </p>
+          <a
+            href="/auth"
+            className="inline-flex items-center gap-2 px-5 py-2.5 border border-ink-5 hover:bg-off-white text-ink-2 rounded-xl font-medium text-sm transition-colors"
+          >
+            Back to sign-in
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

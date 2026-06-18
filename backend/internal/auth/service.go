@@ -68,6 +68,19 @@ func (s *Service) UpsertUserByGoogle(info googleUserInfo) (*User, error) {
 	return &user, nil
 }
 
+// GetUserByID fetches a user by their primary key.
+func (s *Service) GetUserByID(userID string) (*User, error) {
+	var user User
+	err := s.db.QueryRow(`
+		SELECT id, email, name, avatar_url, created_at
+		FROM users WHERE id = $1
+	`, userID).Scan(&user.ID, &user.Email, &user.Name, &user.AvatarURL, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // GetUserWorkspaces returns all workspaces the user belongs to, with their role in each.
 func (s *Service) GetUserWorkspaces(userID string) ([]WorkspaceSummary, error) {
 	rows, err := s.db.Query(`
