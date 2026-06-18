@@ -1,7 +1,8 @@
 version: "2"
 
-issues:
-  exclude-rules:
+linters:
+  exclusions:
+    rules:
       # defer X.Close() / defer tx.Rollback() — standard Go cleanup; the
       # error is intentionally ignored because we are in a teardown path.
       - linters: [errcheck]
