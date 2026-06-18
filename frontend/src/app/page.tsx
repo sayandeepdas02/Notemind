@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import { Header } from '@/components/ui/header-2';
 import { NotemindMark } from '@/components/ui/notemind-mark';
 import {
-  ArrowRight, ChevronRight, Check,
-  Brain, Search, Volume2,
+  ArrowRight,
+  Brain,
+  Check,
+  Search, Volume2,
   CheckCircle, CheckSquare, Users, Grid3X3, Clock,
   TrendingUp, User, Building,
   Plus, Minus, Sparkles,
@@ -77,28 +79,7 @@ function RevealWrapper({ children, delay = 0 }: { children: React.ReactNode; del
   );
 }
 
-function CheckItem({ text }: { text: string }) {
-  return (
-    <li className="flex items-start gap-3 text-[15px] text-ink-3">
-      <span className="w-5 h-5 rounded-full bg-brand-light flex items-center justify-center shrink-0 mt-0.5">
-        <CheckCircle size={12} className="text-brand" />
-      </span>
-      {text}
-    </li>
-  );
-}
 
-
-// ── Hero — Kernel style (sky photo + dark overlay) ───────────
-
-const HERO_BG = `
-  linear-gradient(to bottom,
-    rgba(13,21,32,0.72) 0%,
-    rgba(13,21,32,0.45) 45%,
-    rgba(13,21,32,0.30) 100%
-  ),
-  url('/hero-landscape.png') center/cover no-repeat
-`;
 
 const HERO_BG_FALLBACK = `
   linear-gradient(170deg,
@@ -686,7 +667,6 @@ function MeetingHistorySecondBrainAnimation() {
     </section>
   );
 }
-
 // ── Testimonials ──────────────────────────────────────────────
 
 const TESTIMONIALS: Testimonial[] = [

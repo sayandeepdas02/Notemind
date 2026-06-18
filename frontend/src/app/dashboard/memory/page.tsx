@@ -103,29 +103,7 @@ export default function AIMemoryPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load sessions from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('notemind_memory_sessions');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as ChatSession[];
-        setSessions(parsed.sort((a, b) => b.timestamp - a.timestamp));
-      } catch { /* ignored */ }
-    }
-
-    const currentSessionId = sessionStorage.getItem('notemind_memory_session');
-    if (currentSessionId) {
-      setActiveSessionId(currentSessionId);
-      loadSessionHistory(currentSessionId);
-    }
-  }, []);
-
-  // Scroll to bottom when messages update
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, streaming, loadingHistory]);
-
-  const loadSessionHistory = async (sessionId: string) => {
+  const loadSessionHistory = useCallback(async (sessionId: string) => {
     setLoadingHistory(true);
     setError(null);
     try {
@@ -149,7 +127,24 @@ export default function AIMemoryPage() {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('notemind_memory_sessions');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as ChatSession[];
+        setSessions(parsed.sort((a, b) => b.timestamp - a.timestamp));
+      } catch { /* ignored */ }
+    }
+
+    const currentSessionId = sessionStorage.getItem('notemind_memory_session');
+    if (currentSessionId) {
+      setActiveSessionId(currentSessionId);
+      loadSessionHistory(currentSessionId);
+    }
+  }, [loadSessionHistory]);
 
   const handleSelectSession = (sessionId: string) => {
     if (streaming) handleStop();
@@ -195,6 +190,11 @@ export default function AIMemoryPage() {
     sessionStorage.removeItem('notemind_memory_session');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
+
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, streaming, loadingHistory]);
 
   const handleSubmit = useCallback((queryToSubmit?: string) => {
     const query = (queryToSubmit ?? input).trim();
@@ -253,17 +253,14 @@ export default function AIMemoryPage() {
         stopRef.current = null;
       },
     }, undefined); // global meeting search scope
-
     stopRef.current = stop;
   }, [input, streaming, activeSessionId, sessions]);
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
   };
-
   const handleSuggestionClick = (suggestion: string) => {
     handleSubmit(suggestion);
   };
@@ -327,7 +324,6 @@ export default function AIMemoryPage() {
         
         {/* Header */}
         <div className="shrink-0 border-b border-slate-200/70 bg-white/75 px-5 py-4">
-          <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-brand-light flex items-center justify-center shrink-0">
               <Brain size={16} className="text-brand animate-pulse" />
@@ -339,7 +335,6 @@ export default function AIMemoryPage() {
               </h1>
               <p className="text-[11px] text-ink-5">Semantics search & reasoning across all workspace intelligence</p>
             </div>
-          </div>
           </div>
         </div>
 
