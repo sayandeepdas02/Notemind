@@ -66,22 +66,25 @@ function WorkspaceSelector() {
   }, []);
 
   return (
-    <div ref={ref} className="relative px-3 py-3 border-b border-gray-100 shrink-0">
+    <div ref={ref} className="relative shrink-0 border-b border-slate-200/80 px-4 py-4">
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-off-white transition-colors group"
+        className="group flex w-full items-center justify-between rounded-2xl border border-transparent bg-white/70 px-3 py-2.5 transition-colors hover:border-slate-200 hover:bg-white"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-5 h-5 rounded bg-brand-light flex items-center justify-center shrink-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-light ring-1 ring-brand/10">
             <Building size={11} className="text-brand" />
           </div>
-          <span className="text-[13px] font-medium text-ink-2 truncate">{wsName}</span>
+          <div className="min-w-0 text-left">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-5">Workspace</p>
+            <span className="block truncate text-[13px] font-medium text-ink-2">{wsName}</span>
+          </div>
         </div>
         <ChevronDown size={13} className={`text-ink-5 group-hover:text-ink-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute left-3 right-3 top-[calc(100%-8px)] z-50 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden py-1">
+        <div className="absolute left-4 right-4 top-[calc(100%-2px)] z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white/98 py-1.5 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
           <div className="px-3 py-2 flex items-center justify-between">
             <span className="text-[12px] font-semibold text-ink-4 uppercase tracking-wider">Workspace</span>
           </div>
@@ -212,14 +215,17 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-100">
+    <div className="flex h-full flex-col border-r border-slate-200/80 bg-[#f8fbff]/95 backdrop-blur">
       {/* Logo */}
-      <div className="h-14 flex items-center px-5 border-b border-gray-100 justify-between shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-          <div className="w-6 h-6 rounded-md bg-brand flex items-center justify-center">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 px-5">
+        <Link href="/dashboard" className="flex items-center gap-3" onClick={onClose}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#1C80F2_0%,#60a5fa_100%)] shadow-[0_12px_24px_rgba(28,128,242,0.24)]">
             <Mic size={12} className="text-white" />
           </div>
-          <span className="font-serif text-ink text-[17px] tracking-tight">Notemind</span>
+          <div>
+            <span className="block text-[17px] font-semibold tracking-[-0.03em] text-ink">Notemind</span>
+            <span className="block text-[11px] text-ink-5">Workspace intelligence</span>
+          </div>
         </Link>
         {onClose && (
           <button aria-label="Close menu" onClick={onClose} className="p-1 text-ink-5 hover:text-ink-3 lg:hidden">
@@ -232,15 +238,15 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
       <WorkspaceSelector />
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-5">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
         {NAV_SECTIONS.map((section, si) => (
           <div key={si}>
             {section.label && (
-              <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-5">
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-5">
                 {section.label}
               </p>
             )}
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {section.links.map(link => {
                 const Icon = link.icon;
                 const active = isActive(link);
@@ -249,10 +255,10 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
                     key={link.name}
                     href={link.href}
                     onClick={onClose}
-                    className={`relative flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+                    className={`relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-all ${
                       active
-                        ? 'bg-brand-light text-brand border-l-[2px] border-brand pl-[10px]'
-                        : 'text-ink-3 hover:text-ink hover:bg-off-white'
+                        ? 'bg-white text-brand shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-brand/10'
+                        : 'text-ink-3 hover:bg-white/80 hover:text-ink'
                     }`}
                   >
                     <Icon size={16} />
@@ -266,7 +272,7 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
       </nav>
 
       {/* Bottom */}
-      <div className="shrink-0 border-t border-gray-100 p-3 space-y-0.5">
+      <div className="shrink-0 space-y-1 border-t border-slate-200/80 p-3">
         {BOTTOM_LINKS.map(link => {
           const Icon = link.icon;
           const active = pathname.startsWith(link.href);
@@ -275,10 +281,10 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
               key={link.name}
               href={link.href}
               onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+              className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition-all ${
                 active
-                  ? 'bg-brand-light text-brand border-l-[2px] border-brand pl-[10px]'
-                  : 'text-ink-3 hover:text-ink hover:bg-off-white'
+                  ? 'bg-white text-brand shadow-[0_10px_28px_rgba(15,23,42,0.06)] ring-1 ring-brand/10'
+                  : 'text-ink-3 hover:bg-white/80 hover:text-ink'
               }`}
             >
               <Icon size={16} />
@@ -288,7 +294,7 @@ function Sidebar({ user, onClose }: { user: User; onClose?: () => void }) {
         })}
 
         {/* User */}
-        <div className="flex items-center gap-3 px-3 py-2 mt-1">
+        <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-3">
           <Avatar user={user} size="sm" />
           <div className="flex-1 min-w-0">
             <p className="text-[12px] font-semibold text-ink truncate">{user.name}</p>
@@ -348,7 +354,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <NotificationsProvider>
-      <div className="flex h-screen bg-off-white text-ink overflow-hidden">
+      <div className="dashboard-surface flex h-screen overflow-hidden text-ink">
 
         {/* Mobile overlay */}
         {mobileOpen && (
@@ -361,7 +367,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Sidebar */}
         <aside className={`
           fixed lg:static inset-y-0 left-0 z-50
-          w-[240px] shrink-0
+          w-[272px] shrink-0
           transition-transform duration-300 ease-in-out
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
@@ -369,10 +375,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </aside>
 
         {/* Main */}
-        <main className="flex-1 flex flex-col h-full overflow-hidden">
+        <main className="flex h-full flex-1 flex-col overflow-hidden">
 
           {/* Topbar */}
-          <header className="h-14 shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-gray-100 bg-white">
+          <header className="shrink-0 border-b border-white/70 bg-white/70 px-4 backdrop-blur lg:px-6">
+            <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 aria-label="Open menu"
@@ -382,12 +389,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Menu size={19} />
               </button>
 
-              <h1 className="hidden lg:block text-[15px] font-semibold text-ink">{pageTitle}</h1>
+              <div className="hidden lg:block">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-5">Dashboard</p>
+                <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-ink">{pageTitle}</h1>
+              </div>
 
               {/* Search bar (opens ⌘K palette) */}
               <button
                 onClick={() => setCmdOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3 py-2 bg-off-white rounded-lg w-60 text-[13px] text-ink-5 hover:bg-gray-100 hover:text-ink-3 transition-colors border border-gray-100"
+                className="hidden w-72 items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 text-[13px] text-ink-5 transition-colors hover:border-slate-300 hover:text-ink-3 md:flex"
               >
                 <Search size={13} />
                 <span className="flex-1 text-left">Search meetings...</span>
@@ -399,10 +409,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <NotificationsPanel />
               <Avatar user={user} size="md" />
             </div>
+            </div>
           </header>
 
           {/* Page content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="dashboard-grid flex-1 overflow-y-auto">
             {children}
           </div>
         </main>

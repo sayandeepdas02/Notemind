@@ -11,6 +11,7 @@ import {
 import { api, APIError } from '@/lib/api';
 import { Panel } from '@/components/ui/panel';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardPage, PageHeader, SectionLabel } from '@/components/dashboard/page';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 
@@ -108,7 +109,7 @@ function MeetBadge({ type }: { type: 'google_meet' | 'zoom' | null | undefined }
 function EventCard({ event }: { event: CalendarEvent }) {
   const canJoin = isWithin15Min(event.start_time);
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-colors flex items-start gap-4">
+    <div className="flex items-start gap-4 rounded-[24px] border border-white/80 bg-white/92 p-4 shadow-[0_16px_35px_rgba(15,23,42,0.05)] transition-colors hover:border-slate-200">
       <div className="w-10 h-10 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
         <CalendarDays size={18} className="text-accent" />
       </div>
@@ -144,7 +145,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
 
 function EventSkeleton() {
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-xl flex items-center gap-4">
+      <div className="flex items-center gap-4 rounded-[24px] border border-white/80 bg-white/92 p-4">
       <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-3/4" />
@@ -204,19 +205,19 @@ export default function CalendarPage() {
   // ── Loading ──────────────────────────────────────────────────
   if (pageState === 'loading') {
     return (
-      <div className="p-5 lg:p-8 max-w-3xl mx-auto space-y-4">
+      <DashboardPage className="max-w-4xl space-y-4">
         <Skeleton className="h-8 w-48" />
         <EventSkeleton />
         <EventSkeleton />
         <EventSkeleton />
-      </div>
+      </DashboardPage>
     );
   }
 
   // ── Not connected ────────────────────────────────────────────
   if (pageState === 'not_connected') {
     return (
-      <div className="p-5 lg:p-8 max-w-2xl mx-auto">
+      <DashboardPage className="max-w-4xl">
         <Panel padding="lg" className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-surface-3 border border-gray-200 flex items-center justify-center mx-auto mb-5">
             <CalendarDays size={28} className="text-ink-4" />
@@ -246,7 +247,7 @@ export default function CalendarPage() {
             Connect Google Calendar
           </button>
         </Panel>
-      </div>
+      </DashboardPage>
     );
   }
 
@@ -265,50 +266,48 @@ export default function CalendarPage() {
   // ── Connected empty ──────────────────────────────────────────
   if (pageState === 'connected_empty') {
     return (
-      <div className="p-5 lg:p-8 max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold text-ink">Upcoming meetings</h1>
-            {status?.last_synced && (
-              <p className="text-xs text-ink-4 mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
-            )}
-          </div>
-          <button
-            onClick={handleSync}
-            disabled={syncing}
-            className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-gray-200 text-ink rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-            Sync now
-          </button>
-        </div>
+      <DashboardPage className="max-w-4xl">
+        <PageHeader
+          eyebrow="Calendar"
+          title="Upcoming meetings"
+          description={status?.last_synced ? `Last synced ${formatLastSynced(status.last_synced)}` : 'Upcoming meetings with join links from your connected calendar.'}
+          action={
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+              Sync now
+            </button>
+          }
+        />
         <Panel padding="lg" className="text-center">
           <CalendarDays size={28} className="text-ink-4 mx-auto mb-3 opacity-40" />
           <p className="text-sm text-ink-4">No upcoming meetings with video links in the next 7 days</p>
         </Panel>
-      </div>
+      </DashboardPage>
     );
   }
 
   // ── Connected with events ─────────────────────────────────────
   return (
-    <div className="p-5 lg:p-8 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-ink">Upcoming meetings</h1>
-          {status?.last_synced && (
-            <p className="text-xs text-ink-4 mt-1">Last synced {formatLastSynced(status.last_synced)}</p>
-          )}
-        </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-1.5 px-3 py-2 bg-surface-3 border border-gray-200 text-ink rounded-lg text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
-        >
-          <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-          Sync now
-        </button>
-      </div>
+    <DashboardPage className="max-w-4xl space-y-8">
+      <PageHeader
+        eyebrow="Calendar"
+        title="Upcoming meetings"
+        description={status?.last_synced ? `Last synced ${formatLastSynced(status.last_synced)}` : 'Upcoming meetings with join links from your connected calendar.'}
+        action={
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white/80 px-4 py-2.5 text-sm font-medium text-ink transition-opacity hover:opacity-80 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+            Sync now
+          </button>
+        }
+      />
 
       <div className="space-y-6">
         {(['today', 'tomorrow', 'week'] as const).map(group => {
@@ -316,9 +315,7 @@ export default function CalendarPage() {
           if (!items || items.length === 0) return null;
           return (
             <div key={group}>
-              <h2 className="text-xs font-semibold text-ink-4 uppercase tracking-wider mb-3">
-                {groupLabels[group]}
-              </h2>
+              <SectionLabel className="mb-3">{groupLabels[group]}</SectionLabel>
               <div className="space-y-3">
                 {items.map(ev => <EventCard key={ev.id} event={ev} />)}
               </div>
@@ -326,6 +323,6 @@ export default function CalendarPage() {
           );
         })}
       </div>
-    </div>
+    </DashboardPage>
   );
 }

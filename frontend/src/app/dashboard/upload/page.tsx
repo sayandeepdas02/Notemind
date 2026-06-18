@@ -12,6 +12,7 @@ import {
 import { Panel } from '@/components/ui/panel';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { MeetingStatus } from '@/types/api';
+import { DashboardPage, PageHeader, SectionLabel } from '@/components/dashboard/page';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 const MAX_BYTES = 500 * 1024 * 1024; // 500 MB
@@ -171,11 +172,12 @@ export default function UploadPage() {
   const isUploading = state.kind === 'uploading' || state.kind === 'polling';
 
   return (
-    <div className="p-5 lg:p-8 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-foreground mb-1">Upload recording</h1>
-        <p className="text-sm text-muted-foreground">Upload an audio or video file to transcribe and analyze</p>
-      </div>
+    <DashboardPage className="max-w-4xl space-y-6">
+      <PageHeader
+        eyebrow="Ingestion"
+        title="Upload recording"
+        description="Bring in existing calls and process them with the same post-meeting workflow as live sessions."
+      />
 
       {/* Done state */}
       {state.kind === 'done' && (
@@ -196,6 +198,19 @@ export default function UploadPage() {
 
       {state.kind !== 'done' && (
         <div className="space-y-5">
+          <Panel padding="lg" className="space-y-5">
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
+              <div>
+                <SectionLabel>File intake</SectionLabel>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Drop a recording, set a clear title, and let Notemind handle transcription and analysis.
+                </p>
+              </div>
+              <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm text-ink-4">
+                Supported: MP3, MP4, WAV, M4A, WEBM up to 500 MB.
+              </div>
+            </div>
+
           {/* Drop zone */}
           <div
             ref={dropRef}
@@ -204,12 +219,12 @@ export default function UploadPage() {
             onDragLeave={handleDragLeave}
             onClick={() => !file && fileInputRef.current?.click()}
             className={`
-              relative border-2 rounded-2xl p-10 text-center transition-all cursor-pointer
+              relative cursor-pointer rounded-[28px] border-2 p-10 text-center transition-all
               ${dragOver
                 ? 'border-brand bg-brand-pale'
                 : file
-                ? 'border-border bg-surface-2 cursor-default'
-                : 'border-dashed border-border hover:border-accent/60 hover:bg-surface-3/40'
+                ? 'cursor-default border-border bg-surface-2'
+                : 'border-dashed border-border bg-white hover:border-accent/60 hover:bg-surface-3/40'
               }
             `}
           >
@@ -254,6 +269,7 @@ export default function UploadPage() {
               </div>
             )}
           </div>
+          </Panel>
 
           {sizeError && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -338,6 +354,6 @@ export default function UploadPage() {
           )}
         </div>
       )}
-    </div>
+    </DashboardPage>
   );
 }

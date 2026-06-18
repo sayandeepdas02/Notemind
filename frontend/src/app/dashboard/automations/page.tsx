@@ -8,6 +8,7 @@ import {
 import { api, APIError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Panel } from '@/components/ui/panel';
+import { DashboardPage, PageHeader } from '@/components/dashboard/page';
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -704,35 +705,36 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="p-5 lg:p-8 max-w-4xl mx-auto space-y-6">
+    <DashboardPage className="max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-ink flex items-center gap-2">
+      <PageHeader
+        eyebrow="Automation"
+        title={
+          <span className="flex items-center gap-2">
             <Zap size={20} className="text-brand animate-pulse" />
             Automations
-          </h1>
-          <p className="text-sm text-ink-4 mt-1">
-            Rules that run automatically when meetings match your conditions.
-          </p>
-        </div>
-        <button
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand-mid text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
-        >
-          <Plus size={16} /> New rule
-        </button>
-      </div>
+          </span>
+        }
+        description="Rules that run automatically when meetings match your conditions."
+        action={
+          <button
+            onClick={openNew}
+            className="flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+          >
+            <Plus size={16} /> New rule
+          </button>
+        }
+      />
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 gap-2 shrink-0">
+      <div className="flex shrink-0 gap-2 rounded-[24px] border border-white/80 bg-white/75 p-1.5 shadow-[0_16px_35px_rgba(15,23,42,0.05)]">
         <button
           onClick={() => setActiveTab('rules')}
           className={cn(
-            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all",
+            "rounded-[18px] px-4 py-2.5 text-sm font-semibold transition-all",
             activeTab === 'rules'
-              ? "border-brand text-brand"
-              : "border-transparent text-ink-4 hover:text-ink-2"
+              ? "bg-slate-900 text-white"
+              : "text-ink-4 hover:text-ink-2"
           )}
         >
           Active Rules ({rules.length})
@@ -740,13 +742,13 @@ export default function AutomationsPage() {
         <button
           onClick={() => setActiveTab('simulator')}
           className={cn(
-            "px-4 py-2.5 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5",
+            "flex items-center gap-1.5 rounded-[18px] px-4 py-2.5 text-sm font-semibold transition-all",
             activeTab === 'simulator'
-              ? "border-brand text-brand"
-              : "border-transparent text-ink-4 hover:text-ink-2"
+              ? "bg-slate-900 text-white"
+              : "text-ink-4 hover:text-ink-2"
           )}
         >
-          <Play size={13} className="text-brand" />
+          <Play size={13} className={activeTab === 'simulator' ? 'text-white' : 'text-brand'} />
           Rule Simulator & Logs
         </button>
       </div>
@@ -987,6 +989,6 @@ export default function AutomationsPage() {
           onClose={() => { setBuilderOpen(false); setEditing(undefined); }}
         />
       )}
-    </div>
+    </DashboardPage>
   );
 }

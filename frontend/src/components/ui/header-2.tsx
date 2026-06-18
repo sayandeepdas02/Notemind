@@ -11,7 +11,6 @@ const NAV_LINKS = [
   { label: 'Features',     href: '#features'     },
   { label: 'Pricing',      href: '#pricing'      },
   { label: 'Testimonials', href: '#testimonials' },
-  { label: 'Blog',         href: '#'             },
 ];
 
 // Use 24px threshold so top-6 (24px) sticky is already satisfied when the
