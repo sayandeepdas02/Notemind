@@ -5,7 +5,6 @@ package zoom
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
