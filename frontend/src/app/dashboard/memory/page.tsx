@@ -103,29 +103,7 @@ export default function AIMemoryPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Load sessions from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('notemind_memory_sessions');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as ChatSession[];
-        setSessions(parsed.sort((a, b) => b.timestamp - a.timestamp));
-      } catch { /* ignored */ }
-    }
-
-    const currentSessionId = sessionStorage.getItem('notemind_memory_session');
-    if (currentSessionId) {
-      setActiveSessionId(currentSessionId);
-      loadSessionHistory(currentSessionId);
-    }
-  }, []);
-
-  // Scroll to bottom when messages update
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, streaming, loadingHistory]);
-
-  const loadSessionHistory = async (sessionId: string) => {
+  const loadSessionHistory = useCallback(async (sessionId: string) => {
     setLoadingHistory(true);
     setError(null);
     try {
@@ -149,7 +127,24 @@ export default function AIMemoryPage() {
     } finally {
       setLoadingHistory(false);
     }
-  };
+  }, []);
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('notemind_memory_sessions');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as ChatSession[];
+        setSessions(parsed.sort((a, b) => b.timestamp - a.timestamp));
+      } catch { /* ignored */ }
+    }
+
+    const currentSessionId = sessionStorage.getItem('notemind_memory_session');
+    if (currentSessionId) {
+      setActiveSessionId(currentSessionId);
+      loadSessionHistory(currentSessionId);
+    }
+  }, [loadSessionHistory]);
 
   const handleSelectSession = (sessionId: string) => {
     if (streaming) handleStop();
@@ -196,7 +191,12 @@ export default function AIMemoryPage() {
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
-  const handleSubmit = useCallback((queryToSubmit?: string) => {
+  // Scroll to bottom when messages update
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, streaming, loadingHistory]);
+
+  const handleSubmit = (queryToSubmit?: string) => {
     const query = (queryToSubmit ?? input).trim();
     if (!query || streaming) return;
     setInput('');
@@ -255,7 +255,7 @@ export default function AIMemoryPage() {
     }, undefined); // global meeting search scope
 
     stopRef.current = stop;
-  }, [input, streaming, activeSessionId, sessions]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
